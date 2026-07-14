@@ -1,0 +1,36 @@
+# Local tooling
+.agents/
+.codex/
+work/
+.vscode/
+.idea/
+.tools/
+.repo-git/
+
+# Secrets
+.env
+.env.*
+!.env.example
+outputs/.env
+outputs/backend/.env
+
+# Dependencies and build output
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+coverage/
+**/.npm-cache/
+*.log
+
+# Generated handoff archives
+outputs/*.zip
+*.zip
+
+# Unused legacy model exceeds GitHub's 100 MB file limit
+outputs/nft_sculpture.glb
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini

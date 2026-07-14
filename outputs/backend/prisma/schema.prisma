@@ -1,0 +1,193 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CollectionStatus {
+  DRAFT
+  STORAGE_READY
+  READY_TO_DEPLOY
+  DEPLOYING
+  LIVE
+  ENDED
+  FAILED
+}
+
+enum DeploymentStatus {
+  PREPARED
+  WAITING_FOR_WALLET
+  PENDING
+  CONFIRMED
+  FAILED
+}
+
+enum MintStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+}
+
+model User {
+  id            String          @id @default(cuid())
+  walletAddress String          @unique
+  createdAt     DateTime        @default(now())
+  sessions      WalletSession[]
+  collections   Collection[]
+}
+
+model WalletSession {
+  id            String   @id @default(cuid())
+  walletAddress String
+  nonce         String
+  signature     String?
+  userId        String?
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
+  user          User?    @relation(fields: [userId], references: [id])
+
+  @@index([walletAddress, expiresAt])
+}
+
+model Collection {
+  id                  String           @id @default(cuid())
+  creatorWallet       String
+  name                String
+  symbol              String
+  description         String
+  chainId             Int
+  chainName           String
+  mintCurrency        String
+  mintPriceWei        String
+  maxSupply           Int
+  mintedSupply        Int              @default(0)
+  maxPerWallet        Int
+  royaltyBps          Int
+  nestFeeBps          Int              @default(500)
+  creatorPayoutWallet String
+  status              CollectionStatus @default(DRAFT)
+  contractAddress     String?
+  txHash              String?
+  metadataBaseUri     String?
+  contractUri         String?
+  websiteUrl          String?
+  socialUrl           String?
+  referralCode        String?
+  mintStartAt         DateTime?
+  mintEndAt           DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  creator             User?            @relation(fields: [creatorWallet], references: [walletAddress])
+  assets              ArtworkAsset[]
+  metadataItems       MetadataItem[]
+  deployments         Deployment[]
+  mints               Mint[]
+  referrals           Referral[]
+
+  @@index([status, createdAt])
+  @@index([creatorWallet, createdAt])
+}
+
+model ArtworkAsset {
+  id               String     @id @default(cuid())
+  collectionId     String
+  originalFilename String
+  localUrl         String?
+  ipfsUri          String?
+  arweaveUri       String?
+  mimeType         String
+  sizeBytes        Int
+  status           String
+  createdAt        DateTime   @default(now())
+  collection       Collection @relation(fields: [collectionId], references: [id])
+
+  @@index([collectionId])
+}
+
+model MetadataItem {
+  id           String     @id @default(cuid())
+  collectionId String
+  tokenId      Int
+  name         String
+  description  String
+  imageUri     String
+  metadataUri  String?
+  traitsJson   Json
+  collection   Collection @relation(fields: [collectionId], references: [id])
+
+  @@unique([collectionId, tokenId])
+}
+
+model Deployment {
+  id              String           @id @default(cuid())
+  collectionId    String
+  chainId         Int
+  deployerWallet  String
+  txHash          String?
+  contractAddress String?
+  gasEstimateWei  String?
+  status          DeploymentStatus @default(PREPARED)
+  errorMessage    String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  collection      Collection       @relation(fields: [collectionId], references: [id])
+
+  @@index([collectionId, createdAt])
+  @@index([status, updatedAt])
+}
+
+model Mint {
+  id                String     @id @default(cuid())
+  collectionId      String
+  minterWallet      String
+  quantity          Int
+  txHash            String
+  totalPaidWei      String
+  creatorAmountWei  String
+  nestFeeAmountWei  String
+  status            MintStatus @default(PENDING)
+  createdAt         DateTime   @default(now())
+  collection        Collection @relation(fields: [collectionId], references: [id])
+
+  @@index([collectionId, createdAt])
+  @@unique([txHash])
+}
+
+model IndexerEvent {
+  id              String   @id @default(cuid())
+  chainId         Int
+  contractAddress String
+  eventName       String
+  txHash          String
+  blockNumber     BigInt
+  logIndex        Int      @default(0)
+  payloadJson     Json
+  createdAt       DateTime @default(now())
+
+  @@unique([chainId, txHash, logIndex])
+  @@index([chainId, blockNumber])
+}
+
+model Referral {
+  id               String      @id @default(cuid())
+  referrerWallet   String
+  referredWallet   String
+  collectionId     String?
+  revenueGenerated String      @default("0")
+  commissionStatus String      @default("PLACEHOLDER")
+  notes            String?
+  createdAt        DateTime    @default(now())
+  collection       Collection? @relation(fields: [collectionId], references: [id])
+}
+
+model AdminAction {
+  id          String   @id @default(cuid())
+  adminWallet String
+  actionType  String
+  targetId    String
+  notes       String?
+  createdAt   DateTime @default(now())
+}
