@@ -394,4 +394,426 @@ function tickerSection() {
 }
 
 function liveMintsSection() {
-  return `<section class="section"><div class="section-head"><div><div class="kicker">Live Nest mints</div><h2>Collections deployed through Nest.</h2></div><p>These drops represent collections crëô¶‰Ëkºwµçu±…å½ÕĞµ…É­•Ğµ‘•Ñ…¥°µ±…å½ÕĞˆøñÍ•Ñ¥½¸±…ÍÌô‰Á…¹•°µ…É­•Ğµ‘•Ñ…¥°µÁ…¹•°ˆøñ‘¥Ø±…ÍÌô‰µ…É­•Ğµ‘•Ñ…¥°µ¥‘•¹Ñ¥Ñäˆøñ‘¥Ø±…ÍÌô‰½±±•Ñ¥½¸µ…Ù…Ñ…È¡•É¼µ…Ù…Ñ…È½Á•¹Í•„µ…ÉĞˆÍÑå±”ôˆ‘í½±±•Ñ¥½¹ÉÑMÑå±”¡Œ¥ôˆøğ½‘¥Øøñ‘¥ØøñÍÁ…¸±…ÍÌô‰ÍÑ…Ñ”µ±…‰•°ˆø‘íŒ¹Ù•É¥™¥•€ü€‰=Á•¹M•„Ù•É¥™¥•ˆ€è€‰=Á•¹M•„I½‰¥¹¡½½¡…¥¸‰ôğ½ÍÁ…¸øñ Äø‘íŒ¹¹…µ•ôğ½ ÄøñÀø‘íŒ¹‘•ÍÉ¥ÁÑ¥½¹ôğ½Àøğ½‘¥Øøğ½‘¥Øøñ‘¥Ø±…ÍÌô‰Í•Ñ¥½¸É¥½±Ì´Ìµ…É­•ĞµÍ…µÁ±•Ìˆø‘ílÀ°Ä°È°Ì°Ğ°Õt¹µ…À¡¤ôù€ñ‘¥Ø±…ÍÌô‰¹™Ğµ…ÉĞÑ¡Õµˆµ±…É”ˆÍÑå±”ôˆ‘í…ÉÑMÑå±” ¡Œ¹…ÉĞñğ€À¤€¬¤¥ôˆøğ½‘¥Øù€¤¹©½¥¸ ˆˆ¥ôğ½‘¥Øøğ½Í•Ñ¥½¸øñ…Í¥‘”±…ÍÌô‰Á…¹•°µ¥¹Ğµµ½‘Õ±”ˆøñÍÁ…¸±…ÍÌô‰ÍÑ…Ñ”µ±…‰•°ˆù5…É­•ÑÁ±…”‘…Ñ„ğ½ÍÁ…¸øñ Èø‘íŒ¹¹…µ•ôğ½ ÈøñÀù=Á•¹M•„‘¥Í½Ù•ÉäÉ•½É™½ÈI½‰¥¹¡½½¡…¥¸¸ğ½Àø‘í‘•Á±½åI½Ü ‰M½ÕÉ”ˆ°Œ¹É•…Ñ½Èñğ€‰=Á•¹M•„µ…É­•ÑÁ±…”ˆ¥ô‘í‘•Á±½åI½Ü ‰±½½Èˆ°Œ¹™±½½È¥ô‘í‘•Á±½åI½Ü ˆÅµ½Ù•µ•¹Ğˆ°€ñÍÁ…¸±…ÍÌô‰µ•ÑÉ¥Œ´‘íŒ¹¡…¹•QåÁ•ôˆø‘íŒ¹¡…¹•ôğ½ÍÁ…¸ù€¥ô‘í‘•Á±½åI½Ü ‰MÑ…ÑÕÌˆ°Œ¹ÍÑ…ÑÕÌ¥ô‘í‘•Á±½åI½Ü ‰=Á•¹M•„ˆ°Œ¹½Á•¹Í•…UÉ°€ü€ñ„¡É•˜ôˆ‘íŒ¹½Á•¹Í•…UÉ±ôˆÑ…É•Ğô‰}‰±…¹¬ˆÉ•°ô‰¹½½Á•¹•È¹½É•™•ÉÉ•Èˆù=Á•¸½±±•Ñ¥½¸Í•…É ğ½„ù€€è€‰=Á•¹M•„UI0Õ¹…Ù…¥±…‰±”ˆ¥ô‘í‘•Á±½åI½Ü ‰½¹ÑÉ…Ğˆ°Œ¹½¹ÑÉ…Ñ‘‘É•ÍÌ€ü€ñ„¡É•˜ôˆ‘í•áÁ±½É•É‘‘É•ÍÌ¡Œ¹½¹ÑÉ…Ñ‘‘É•ÍÌ¥ôˆÑ…É•Ğô‰}‰±…¹¬ˆÉ•°ô‰¹½½Á•¹•È¹½É•™•ÉÉ•Èˆø‘íŒ¹½¹ÑÉ…Ñ‘‘É•ÍÍôğ½„ù€€è€‰A•¹‘¥¹œA$¡å‘É…Ñ¥½¸ˆ¥ôñ‘¥Ø±…ÍÌô‰‘¥Ù¥‘•Èˆøğ½‘¥Øøñ ÌùI••¹Ğµ…É­•Ğ…Ñ¥Ù¥Ñäğ½ Ìø‘í…Ñ¥Ù¥Ñå1¥ÍĞ ¥ôñ Ìù¥Í±½ÍÕÉ•Ìğ½ ÌøñÀùQ¡Õµ‰¹…¥±Ì…É”Í¡½İ¸…Ğ…Ù…Ñ…ÈÍ¥é”‰•…ÕÍ”Ñ¡”ÕÉÉ•¹ĞÍ½ÕÉ”¥ÌÑ¡”=Á•¹M•„É…¹­¥¹œÍÉ••¹Í¡½Ğ¸1¥Ù”A$¥µ…•ÌÍ¡½Õ±É•Á±…”Ñ¡•Í”İ¡•¸½¹¹•Ñ•¸ğ½Àøğ½…Í¥‘”øğ½µ…¥¸ù€¤ì)ô()™Õ¹Ñ¥½¸‘•Á±½åI½Ü¡„±ˆ¤ì(€É•ÑÕÉ¸€ñ‘¥Ø±…ÍÌô‰ÍÑ…ĞµÉ½ÜˆøñÍÁ…¸ø‘í…ôğ½ÍÁ…¸øñÍÑÉ½¹œø‘í‰ôğ½ÍÑÉ½¹œøğ½‘¥Øù€ì)ô()™Õ¹Ñ¥½¸•áÁ±½É•A…” ¤ì(€É•ÑÕÉ¸Í¡•±°¡€ñµ…¥¸±…ÍÌô‰Á…”•áÁ±½É”µ±…å½ÕĞˆøñ…Í¥‘”±…ÍÌô‰Á…¹•°™¥±Ñ•ÉÌˆøñ Ìù¥±Ñ•ÉÌğ½ Ìø‘íl‰9QÌ€¼½±±•Ñ¥½¹Ìˆ°‰™±½½ÈÁÉ¥”ˆ°ˆÅµ½Ù•µ•¹Ğˆ°‰Ù•É¥™¥•ˆ°‰É••¹Ğ…Ñ¥Ù¥Ñäˆ°‰I½‰¥¹¡½½¡…¥¸‰t¹µ…À¡àôù€ñ±…‰•°øñÍÁ…¸ø‘íáôğ½ÍÁ…¸øñÍ•±•Ğøñ½ÁÑ¥½¸ù¹äğ½½ÁÑ¥½¸øğ½Í•±•Ğøğ½±…‰•°ù€¤¹©½¥¸ ˆˆ¥ôñÀ±…ÍÌô‰¡¥¹ĞˆùÕÉÉ•¹ĞÉ•½É‘Ì…É”Í••‘•™É½´=Á•¹M•„É…¹­¥¹œÙ¥Í¥‰¥±¥Ñä¸¥±Ñ•ÉÌ‰•½µ”±¥Ù”İ¡•¸Ñ¡”=Á•¹M•„A$…‘…ÁÑ•ÈÉ•ÑÕÉ¹Ì½±±•Ñ¥½¸É½İÌ¸ğ½Àøğ½…Í¥‘”øñÍ•Ñ¥½¸øñ‘¥Ø±…ÍÌô‰Í•Ñ¥½¸µ¡•…ˆøñ‘¥Øøñ‘¥Ø±…ÍÌô‰­¥­•ÈˆùI½‰¥¹¡½½¡…¥¸‘¥Í½Ù•Éäğ½‘¥Øøñ ÈùáÁ±½É”=Á•¹M•„½±±•Ñ¥½¹Ìğ½ Èøğ½‘¥Øøğ½‘¥Øøñ‘¥Ø±…ÍÌô‰…Ñ¥½¹Ìˆø‘íl‰=Á•¹M•„É…¹­•ˆ°‰Y•É¥™¥•ˆ°‰±½½ÈÕ¹‘•È€À¸ÀÄˆ°‰A½Í¥Ñ¥Ù”€Åˆ°‰I••¹Ñ±ä…Ñ¥Ù”‰t¹µ…À¡àôù€ñ‰ÕÑÑ½¸±…ÍÌô‰‰Ñ¸Íµ…±°ˆø‘íáôğ½‰ÕÑÑ½¸ù€¤¹©½¥¸ ˆˆ¥ôğ½‘¥Øø‘í½Á•¹Í•…½±±•Ñ¥½¹Ì¹±•¹Ñ €ü€ñ‘¥Ø±…ÍÌô‰É¥…±±•ÉäµÉ¥ˆø‘í½Á•¹Í•…½±±•Ñ¥½¹Ì¹µ…À¡…É¤¹©½¥¸ ˆˆ¥ôğ½‘¥Øù€€è½Á•¹Í•…µÁÑåMÑ…Ñ” ‰9¼=Á•¹M•„½±±•Ñ¥½¹Ì±½…‘•ˆ°€‰Q¡”‘¥Í½Ù•ÉäÁ…”¥Ì¹½Üİ¥É•™½ÈÉ•…°=Á•¹M•„‘…Ñ„½¹±ä¸=¹”I½‰¥¹¡½½¡…¥¸…ÁÁ•…ÉÌ¥¸Ñ¡”ÍÕÁÁ½ÉÑ•¡…¥¹ÌÉ•ÍÁ½¹Í”…¹Ñ¡”A$­•ä¥Ì½¹™¥ÕÉ•°½±±•Ñ¥½¹Ìİ¥±°É•¹‘•È¡•É”¸ˆ¥ôğ½Í•Ñ¥½¸øğ½µ…¥¸ù€¤ì)ô()™Õ¹Ñ¥½¸‘…Í¡‰½…É‘A…” ¤ì(€½¹ÍĞ½±±•Ñ¥½¹I½İÌ€ôÁ±…Ñ™½Éµ½±±•Ñ¥½¹Ì¹µ…À¡Œôù€ñÑÈøñÑøñ‘¥Ø±…ÍÌô‰µ¥¹¤µ…ÉĞˆÍÑå±”ôˆ‘í…ÉÑMÑå±”¡Œ¹…ÉĞñğ€À¥ôˆøğ½‘¥Øøğ½ÑøñÑø‘íŒ¹¹…µ•ôğ½ÑøñÑø‘íŒ¹µ¥¹Ñ•‘ô¼‘íŒ¹ÍÕÁÁ±åôğ½ÑøñÑø‘íŒ¹ÁÉ¥”€ôôô€‰É•”ˆ€ü€‰É•”ˆ€è€‘íŒ¹ÁÉ¥•ôQ!ôğ½ÑøñÑøñ„¡É•˜ôˆŒ½µ¥¹Ğ¼‘íŒ¹¥‘ôˆù5¥¹ĞÁ…”ğ½„øğ½Ñøğ½ÑÈù€¤¹©½¥¸ ˆˆ¤ì(€É•ÑÕÉ¸Í¡•±°¡€ñµ…¥¸±…ÍÌô‰Á…”ˆøñ‘¥Ø±…ÍÌô‰Í•Ñ¥½¸µ¡•…ˆøñ‘¥Øøñ‘¥Ø±…ÍÌô‰­¥­•ÈˆùÉ•…Ñ½È‘…Í¡‰½…Éğ½‘¥Øøñ Èù5…¹…”9•ÍĞµ‘•Á±½å•½±±•Ñ¥½¹Ì¸ğ½ Èøğ½‘¥Øøğ½‘¥Øøñ‘¥Ø±…ÍÌô‰ÍÑ…ÑÌˆø‘íl‰9•ÍĞ½±±•Ñ¥½¹Ìˆ°‰1¥Ù”½±±•Ñ¥½¹Ìˆ°‰Q½Ñ…°µ¥¹Ñ•ˆ°‰AÉ¥µ…ÉäÙ½±Õµ”ˆ°‰É•…Ñ½È…ÉÕ•ˆ°‰9•ÍĞ™••Ìˆ°‰]¥Ñ¡‘É…İ…‰±”ˆ°‰U¹¥ÅÕ”µ¥¹Ñ•ÉÌ‰t¹µ…À ¡à±¤¤ôù€ñ‘¥Ø±…ÍÌô‰ÍÑ…ĞˆøñÍÁ…¸ø‘íáôğ½ÍÁ…¸øñÍÑÉ½¹œø‘í‘…Í¡‰½…É‘MÑ…Ğ¡¤¥ôğ½ÍÑÉ½¹œøğ½‘¥Øù€¤¹©½¥¸ ˆˆ¥ôğ½‘¥Øøñ‘¥Ø±…ÍÌô‰Í•Ñ¥½¸É¥½±Ì´Èˆøñ‘¥Ø±…ÍÌô‰Á…¹•°ˆøñ Ìù½±±•Ñ¥½¹Ì‘•Á±½å•½¸9•ÍĞğ½ ÌøñÑ…‰±”±…ÍÌô‰Ñ…‰±”ˆøñÑÈøñÑ ùÉÑİ½É¬ğ½Ñ øñÑ ù9…µ”ğ½Ñ øñÑ ù5¥¹Ñ•ğ½Ñ øñÑ ùAÉ¥”ğ½Ñ øñÑ ù1¥¹¬ğ½Ñ øğ½ÑÈø‘í½±±•Ñ¥½¹I½İÍôğ½Ñ…‰±”øğ½‘¥Øøñ‘¥Ø±…ÍÌô‰Á…¹•°ˆøñ ÌùÉ•…Ñ½È…Ñ¥½¹Ìğ½ ÌøñÑ…‰±”±…ÍÌô‰Ñ…‰±”ˆøñÑÈøñÑù=Á•¸µ¥¹ĞÁ…”ğ½ÑøñÑùAÕ‰±¥Œ‰Õå•Èµ™…¥¹œÉ½ÕÑ”ğ½Ñøğ½ÑÈøñÑÈøñÑùY¥•Ü½¹ÑÉ…Ğğ½ÑøñÑùI½‰¥¹¡½½¡…¥¸•áÁ±½É•Èğ½Ñøğ½ÑÈøñÑÈøñÑùI•Ù•¹Õ”ÍÁ±¥Ğğ½ÑøñÑøäÔ”É•…Ñ½È€¼€Ô”9•ÍĞğ½Ñøğ½ÑÈøñÑÈøñÑù]¥Ñ¡‘É…ÜÉ•…Ñ½È‰…±…¹”ğ½ÑøñÑù½¹ÑÉ…Ğ…±°Á±…•¡½±‘•Èğ½Ñøğ½ÑÈøñÑÈøñÑùI•Ù•…°µ•Ñ…‘…Ñ„ğ½ÑøñÑù=İ¹•È…Ñ¥½¸Á±…•¡½±‘•Èğ½Ñøğ½ÑÈøñÑÈøñÑùMå¹Œ=Á•¹M•„ğ½ÑøñÑù5…É­•ÑÁ±…”…‘…ÁÑ•ÈÁ±…•¡½±‘•Èğ½Ñøğ½ÑÈøğ½Ñ…‰±”øñÀ±…ÍÌô‰¡¥¹Ğˆù…Í¡‰½…ÉÑ½Ñ…±Ì½µ”™É½´9•ÍĞ‘•Á±½åµ•¹ÑÌ°¹½Ğ•áÑ•É¹…°=Á•¹M•„É…¹­¥¹Ì¸ğ½Àøğ½‘¥Øøğ½‘¥Øøğ½µ…¥¸ù€¤ì)ô()™Õ¹Ñ¥½¸‘…Í¡‰½…É‘MÑ…Ğ¡¥¹‘•à¤ì(€½¹ÍĞÑ½Ñ…±5¥¹Ñ•€ôÁ±…Ñ™½Éµ½±±•Ñ¥½¹Ì¹É•‘Õ” ¡ÍÕ´°¥Ñ•´¤€ôøÍÕ´€¬¥Ñ•´¹µ¥¹Ñ•°€À¤ì(€½¹ÍĞ±¥Ù”€ôÁ±…Ñ™½Éµ½±±•Ñ¥½¹Ì¹™¥±Ñ•È ¡¥Ñ•´¤€ôø¥Ñ•´¹ÍÑ…ÑÕÌ€„ôô€‰¹‘•ˆ¤¹±•¹Ñ ì(€É•ÑÕÉ¸mÁ±…Ñ™½Éµ½±±•Ñ¥½¹Ì¹±•¹Ñ °±¥Ù”°Ñ½Ñ…±5¥¹Ñ•°€‰=¹¡…¥¸É•…ˆ°€‰=¹¡…¥¸É•…ˆ°€‰=¹¡…¥¸É•…ˆ°€‰½¹ÑÉ…ĞÉ•…ˆ°€‰%¹‘•á•ÈÍå¹Œ‰um¥¹‘•átì)ô()™Õ¹Ñ¥½¸…‘µ¥¹A…” ¤ì(€É•ÑÕÉ¸Í¡•±°¡€ñµ…¥¸±…ÍÌô‰Á…”ˆøñ‘¥Ø±…ÍÌô‰Í•Ñ¥½¸µ¡•…ˆøñ‘¥Øøñ‘¥Ø±…ÍÌô‰­¥­•Èˆù9•ÍĞ…‘µ¥¸ğ½‘¥Øøñ Èù½¹ÑÉ…Ğµ…ÕÑ¡½É¥é•½¹ÑÉ½±Ì½¹±ä¸ğ½ Èøğ½‘¥Øøğ½‘¥Øøñ‘¥Ø±…ÍÌô‰Á…¹•°ˆøñÀù‘µ¥¸…•ÍÌµÕÍĞ‰”É•…™É½´½¹¹•Ñ•µİ…±±•Ğ½¹ÑÉ…Ğ½İ¹•ÉÍ¡¥À½È•áÁ±¥¥Ğ…ÕÑ¡½É¥é…Ñ¥½¸¸Q¡¥Ì¥¹Ñ•É™…”µÕÍĞ¹½ĞÉ•±ä½¸„™É½¹Ñ•¹µ½¹±äÉ½±”Íİ¥Ñ¡•È¸ğ½ÀøñÑ…‰±”±…ÍÌô‰Ñ…‰±”ˆøñÑÈøñÑ ùÕ¹Ñ¥½¸ğ½Ñ øñÑ ùÕÑ¡½É¥Ñäğ½Ñ øğ½ÑÈøñÑÈøñÑùY¥•Ü…±°™…Ñ½Éä‘•Á±½åµ•¹ÑÌğ½ÑøñÑùAÕ‰±¥Œ¥¹‘•á•‘…Ñ„ğ½Ñøğ½ÑÈøñÑÈøñÑù•…ÑÕÉ”½Õ¹™•…ÑÕÉ”¥¸…ÁÀ‘…Ñ…‰…Í”ğ½ÑøñÑùM•ÉÙ•ÈµÍ¥‘”…‘µ¥¸…ÕÑ ğ½Ñøğ½ÑÈøñÑÈøñÑù!¥‘”µ…±¥¥½ÕÌ½¹Ñ•¹Ğ™É½´‘¥Í½Ù•Éäğ½ÑøñÑùAÉ•Í•¹Ñ…Ñ¥½¸½¹±ä°‘½•Ì¹½Ğ‘•±•Ñ”‰±½­¡…¥¸‘…Ñ„ğ½Ñøğ½ÑÈøñÑÈøñÑùA…ÕÍ”™…Ñ½Éä‘•Á±½åµ•¹Ğğ½ÑøñÑù…Ñ½Éä½İ¹•Èğ½Ñøğ½ÑÈøñÑÈøñÑù5…¹…”9•ÍĞÑÉ•…ÍÕÉäğ½ÑøñÑù½¹ÑÉ…ĞÁ•Éµ¥ÍÍ¥½¹Ìğ½Ñøğ½ÑÈøñÑÈøñÑù]¥Ñ¡‘É…Ü9•ÍĞÉ•Ù•¹Õ”ğ½ÑøñÑùQÉ•…ÍÕÉäÉ½±”ğ½Ñøğ½ÑÈøğ½Ñ…‰±”øğ½‘¥Øøğ½µ…¥¸ù€¤ì)ô()™Õ¹Ñ¥½¸…Ñ¥Ù¥Ñå1¥ÍĞ ¤ì(€É•ÑÕÉ¸¥¹Ñ•É…Ñ¥½¹Ñ¥Ù¥Ñä¹µ…À ¡„±¤¤ôù€ñ‘¥Ø±…ÍÌô‰…Ñ¥Ù¥Ñäµ¥Ñ•´ˆøñ‘¥Ø±…ÍÌô‰Ñ¡ÕµˆˆÍÑå±”ôˆ‘í…ÉÑMÑå±”¡¤¥ôˆøğ½‘¥Øøñ‘¥ØøñÍÑÉ½¹œø‘í…lÅuôğ½ÍÑÉ½¹œøñ‘¥Øø‘í…lÁuôğ½‘¥Øøğ½‘¥ØøñÍÁ…¸ø‘í…lÉuôğ½ÍÁ…¸øğ½‘¥Øù€¤¹©½¥¸ ˆˆ¤ì)ô()™Õ¹Ñ¥½¸Í•Ñ1…Õ¹ ¡­•ä°Ù…±Õ”¤ìÍÑ…Ñ”¹±…Õ¹¡m­•åt€ôÙ…±Õ”ìô)™Õ¹Ñ¥½¸Í•ÑMÑ•À¡ÍÑ•À¤ìÍÑ…Ñ”¹±…Õ¹¡MÑ•À€ôÍÑ•ÀìÉ•¹‘•È ¤ìô)…Íå¹Œ™Õ¹Ñ¥½¸¡•­	…­•¹ ¤ì(€ÑÉäì(€€€½¹ÍĞÉ•ÍÁ½¹Í”€ô…İ…¥Ğ™•Ñ ¡€‘íA%}=I%%9ô½¡•…±Ñ¡€°ì¡•…‘•ÉÌèì…•ÁĞè€‰…ÁÁ±¥…Ñ¥½¸½©Í½¸ˆôô¤ì(€€€¥˜€ …É•ÍÁ½¹Í”¹½¬¤Ñ¡É½Ü¹•ÜÉÉ½È ‰9•ÍĞA$Õ¹…Ù…¥±…‰±”ˆ¤ì(€€€ÍÑ…Ñ”¹‰…­•¹€ô€‰½¹±¥¹”ˆì(€€€ÍÑ…Ñ”¹‰…­•¹‘5•ÍÍ…”€ô€‰9•ÍĞA$…¹‘…Ñ…‰…Í”½¹¹•Ñ•ˆì(€€€…İ…¥Ğ±½…‘	…­•¹‘½±±•Ñ¥½¹Ì ¤ì(€ô…Ñ €¡•ÉÉ½È¤ì(€€€ÍÑ…Ñ”¹‰…­•¹€ô€‰½™™±¥¹”ˆì(€€€ÍÑ…Ñ”¹‰…­•¹‘5•ÍÍ…”€ô€‰	…­•¹½™™±¥¹”ì‘•µ¼‘…Ñ„É•µ…¥¹Ì…Ù…¥±…‰±”ˆì(€ô(€É•¹‘•È ¤ì)ô()…Íå¹Œ™Õ¹Ñ¥½¸±½…‘	…­•¹‘½±±•Ñ¥½¹Ì ¤ì(€½¹ÍĞÉ•ÍÕ±Ğ€ô…İ…¥Ğ…Á¥I•ÅÕ•ÍĞ ˆ½½±±•Ñ¥½¹ÌıÍÑ…ÑÕÌõ1%Y™Ñ…­”ôÈĞˆ¤ì(€¥˜€ …ÉÉ…ä¹¥ÍÉÉ…ä¡É•ÍÕ±Ğ¹¥Ñ•µÌ¤ñğ€…É•ÍÕ±Ğ¹¥Ñ•µÌ¹±•¹Ñ ¤É•ÑÕÉ¸ì(€Á±…Ñ™½Éµ½±±•Ñ¥½¹Ì€ôÉ•ÍÕ±Ğ¹¥Ñ•µÌ¹µ…À ¡Œ°¥¹‘•à¤€ôø€¡ì(€€€¥èŒ¹¥°(€€€½¹ÑÉ…Ñ‘‘É•ÍÌèŒ¹½¹ÑÉ…Ñ‘‘É•ÍÌñğ€‰A•¹‘¥¹œ‘•Á±½åµ•¹Ğˆ°(€€€¹…µ”èŒ¹¹…µ”°(€€€É•…Ñ½ÈèŒ¹É•…Ñ½É9…µ”ñğ€‰9•ÍĞÉ•…Ñ½Èˆ°(€€€É•…Ñ½É‘‘É•ÍÌèŒ¹É•…Ñ½É]…±±•Ğ°(€€€‘•ÍÉ¥ÁÑ¥½¸èŒ¹‘•ÍÉ¥ÁÑ¥½¸°(€€€µ¥¹Ñ•èŒ¹µ¥¹Ñ•‘MÕÁÁ±äñğ€À°(€€€ÍÕÁÁ±äèŒ¹µ…áMÕÁÁ±ä°(€€€ÁÉ¥”èİ•¥Q½Ñ ¡Œ¹µ¥¹ÑAÉ¥•]•¤¤°(€€€µ…á]…±±•ĞèŒ¹µ…áA•É]…±±•Ğ°(€€€ÍÑ…ÑÕÌèŒ¹ÍÑ…ÑÕÌ€ôôô€‰1%Yˆ€ü€‰1¥Ù”µ¥¹Ğˆ€èŒ¹ÍÑ…ÑÕÌ°(€€€•¹‘Í%¸èŒ¹µ¥¹Ñ¹‘Ğ€ü¹•Ü…Ñ”¡Œ¹µ¥¹Ñ¹‘Ğ¤¹Ñ½1½…±•…Ñ•MÑÉ¥¹œ ¤€è€‰=Á•¸ˆ°(€€€‘•Á±½å•‘Ğè€‰9•ÍĞ‘•Á±½åµ•¹Ğˆ°(€€€µ•Ñ…‘…Ñ…¥èŒ¹µ•Ñ…‘…Ñ…	…Í•UÉ¤ñğ€‰5•Ñ…‘…Ñ„Á•¹‘¥¹œˆ°(€€€…ÉĞè¥¹‘•à€”IQ]=I,¹±•¹Ñ (€ô¤¤ì)ô()™Õ¹Ñ¥½¸•Ñ¡Q½]•¤¡Ù…±Õ”¤ì(€½¹ÍĞmİ¡½±”€ô€ˆÀˆ°‘•¥µ…°€ô€ˆ‰t€ôMÑÉ¥¹œ¡Ù…±Õ”ñğ€ˆÀˆ¤¹ÍÁ±¥Ğ ˆ¸ˆ¤ì(€É•ÑÕÉ¸€¡	¥%¹Ğ¡İ¡½±”ñğ€ˆÀˆ¤€¨€ÄÁ¸€¨¨€Äá¸€¬	¥%¹Ğ ¡‘•¥µ…°€¬€ˆÀˆ¹É•Á•…Ğ Äà¤¤¹Í±¥” À°€Äà¤¤¤¹Ñ½MÑÉ¥¹œ ¤ì)ô()™Õ¹Ñ¥½¸İ•¥Q½Ñ ¡Ù…±Õ”¤ì(€¥˜€ …Ù…±Õ”¤É•ÑÕÉ¸€ˆÀˆì(€½¹ÍĞÁ…‘‘•€ôMÑÉ¥¹œ¡Ù…±Õ”¤¹Á…‘MÑ…ÉĞ Ää°€ˆÀˆ¤ì(€½¹ÍĞİ¡½±”€ôÁ…‘‘•¹Í±¥” À°€´Äà¤ñğ€ˆÀˆì(€½¹ÍĞ™É…Ñ¥½¸€ôÁ…‘‘•¹Í±¥” ´Äà¤¹É•Á±…” ¼À¬¼°€ˆˆ¤¹Í±¥” À°€Ğ¤ì(€É•ÑÕÉ¸™É…Ñ¥½¸€ü€‘íİ¡½±•ô¸‘í™É…Ñ¥½¹õ€€èİ¡½±”ì)ô()…Íå¹Œ™Õ¹Ñ¥½¸½¹¹•Ñ]…±±•Ğ ¤ì(€ÍÑ…Ñ”¹¹½Ñ¥”€ô€ˆˆì(€¥˜€ …İ¥¹‘½Ü¹•Ñ¡•É•Õ´¤ì(€€€ÍÑ…Ñ”¹¹½Ñ¥”€ô€‰9¼Y4İ…±±•Ğ‘•Ñ•Ñ•¸%¹ÍÑ…±°„½µÁ…Ñ¥‰±”İ…±±•ĞÑ¼Í¥¸¥¸¸ˆì(€€€É•¹‘•È ¤ì(€€€É•ÑÕÉ¸ì(€ô(€ÑÉäì(€€€½¹ÍĞmİ…±±•Ñ‘‘É•ÍÍt€ô…İ…¥Ğİ¥¹‘½Ü¹•Ñ¡•É•Õ´¹É•ÅÕ•ÍĞ¡ìµ•Ñ¡½è€‰•Ñ¡}É•ÅÕ•ÍÑ½Õ¹ÑÌˆô¤ì(€€€ÍÑ…Ñ”¹İ…±±•Ğ€ô€‰½¹¹•Ñ•ˆì(€€€ÍÑ…Ñ”¹İ…±±•Ñ‘‘É•ÍÌ€ôİ…±±•Ñ‘‘É•ÍÌì(€€€±½…±MÑ½É…”¹Í•Ñ%Ñ•´ ‰¹•ÍÑ]…±±•Ñ‘‘É•ÍÌˆ°İ…±±•Ñ‘‘É•ÍÌ¤ì(€€€¥˜€¡ÍÑ…Ñ”¹‰…­•¹€ôôô€‰½¹±¥¹”ˆ¤ì(€€€€€½¹ÍĞ¡…±±•¹”€ô…İ…¥Ğ…Á¥I•ÅÕ•ÍĞ ˆ½…ÕÑ ½¹½¹”ˆ°ìµ•Ñ¡½è€‰A=MPˆ°‰½‘äè)M=8¹ÍÑÉ¥¹¥™ä¡ìİ…±±•Ñ‘‘É•ÍÌô¤ô¤ì(€€€€€½¹ÍĞÍ¥¹…ÑÕÉ”€ô…İ…¥Ğİ¥¹‘½Ü¹•Ñ¡•É•Õ´¹É•ÅÕ•ÍĞ¡ìµ•Ñ¡½è€‰Á•ÉÍ½¹…±}Í¥¸ˆ°Á…É…µÌèm¡…±±•¹”¹µ•ÍÍ…”°İ…±±•Ñ‘‘É•ÍÍtô¤ì(€€€€€½¹ÍĞÙ•É¥™¥•€ô…İ…¥Ğ…Á¥I•ÅÕ•ÍĞ ˆ½…ÕÑ ½Ù•É¥™äˆ°ìµ•Ñ¡½è€‰A=MPˆ°‰½‘äè)M=8¹ÍÑÉ¥¹¥™ä¡ìÍ•ÍÍ¥½¹%è¡…±±•¹”¹Í•ÍÍ¥½¹%°µ•ÍÍ…”è¡…±±•¹”¹µ•ÍÍ…”°Í¥¹…ÑÕÉ”ô¤ô¤ì(€€€€€ÍÑ…Ñ”¹…ÕÑ¡Q½­•¸€ôÙ•É¥™¥•¹Ñ½­•¸ì(€€€€€±½…±MÑ½É…”¹Í•Ñ%Ñ•´ ‰¹•ÍÑÕÑ¡Q½­•¸ˆ°Ù•É¥™¥•¹Ñ½­•¸¤ì(€€€€€ÍÑ…Ñ”¹¹½Ñ¥”€ô€‰]…±±•Ğ½¹¹•Ñ•…¹…ÕÑ¡•¹Ñ¥…Ñ•İ¥Ñ 9•ÍĞ¸ˆì(€€€ô•±Í”ì(€€€€€ÍÑ…Ñ”¹¹½Ñ¥”€ô€‰]…±±•Ğ½¹¹•Ñ•¸	…­•¹¥Ì½™™±¥¹”°Í¼±…Õ¹ ‘É…™ÑÌÉ•µ…¥¸±½…°™½È¹½Ü¸ˆì(€€€ô(€ô…Ñ €¡•ÉÉ½È¤ì(€€€ÍÑ…Ñ”¹¹½Ñ¥”€ô]…±±•Ğ½¹¹•Ñ¥½¸™…¥±•è€‘í•ÉÉ½È¹µ•ÍÍ…•õ€ì(€ô(€É•¹‘•È ¤ì)ô()™Õ¹Ñ¥½¸‘É…™ÑA…å±½… ¤ì(€½¹ÍĞİ…±±•Ğ€ôÍÑ…Ñ”¹İ…±±•Ñ‘‘É•ÍÌñğÍÑ…Ñ”¹±…Õ¹ ¹É•…Ñ½É]…±±•Ğì(€É•ÑÕÉ¸ì(€€€¹…µ”èÍÑ…Ñ”¹±…Õ¹ ¹¹…µ”°(€€€Íåµ‰½°èÍÑ…Ñ”¹±…Õ¹ ¹Íåµ‰½°°(€€€‘•ÍÉ¥ÁÑ¥½¸èÍÑ…Ñ”¹±…Õ¹ ¹‘•ÍÉ¥ÁÑ¥½¸°(€€€¡…¥¹%èQ%Y}9Q]=I,¹¡…¥¹%°(€€€¡…¥¹9…µ”èQ%Y}9Q]=I,¹¹…µ”°(€€€µ¥¹ÑÕÉÉ•¹äèQ%Y}9Q]=I,¹ÕÉÉ•¹ä°(€€€µ¥¹ÑAÉ¥•]•¤è•Ñ¡Q½]•¤¡ÍÑ…Ñ”¹±…Õ¹ ¹ÁÉ¥”¤°(€€€µ…áMÕÁÁ±äè9Õµ‰•È¡ÍÑ…Ñ”¹±…Õ¹ ¹ÍÕÁÁ±ä¤°(€€€µ…áA•É]…±±•Ğè9Õµ‰•È¡ÍÑ…Ñ”¹±…Õ¹ ¹µ…á]…±±•Ğ¤°(€€€É½å…±Ñå	ÁÌè9Õµ‰•È¡ÍÑ…Ñ”¹±…Õ¹ ¹É½å…±Ñå	ÁÌ¤°(€€€É•…Ñ½ÉA…å½ÕÑ]…±±•ĞèÍÑ…Ñ”¹±…Õ¹ ¹Á…å½ÕĞñğİ…±±•Ğ°(€€€İ•‰Í¥Ñ•UÉ°èÍÑ…Ñ”¹±…Õ¹ ¹İ•‰Í¥Ñ”ñğÕ¹‘•™¥¹•°(€€€Í½¥…±UÉ°èÍÑ…Ñ”¹±…Õ¹ ¹Í½¥…°ñğÕ¹‘•™¥¹•(€ôì)ô()…Íå¹Œ™Õ¹Ñ¥½¸Í…Ù•É…™Ğ¡Í¥±•¹Ğ€ô™…±Í”¤ì(€¥˜€¡ÍÑ…Ñ”¹‰…­•¹€„ôô€‰½¹±¥¹”ˆñğ€…ÍÑ…Ñ”¹…ÕÑ¡Q½­•¸¤ì(€€€±½…±MÑ½É…”¹Í•Ñ%Ñ•´ ‰¹•ÍÑ1…Õ¹¡É…™Ğˆ°)M=8¹ÍÑÉ¥¹¥™ä¡ÍÑ…Ñ”¹±…Õ¹ ¤¤ì(€€€¥˜€ …Í¥±•¹Ğ¤ìÍÑ…Ñ”¹¹½Ñ¥”€ô€‰É…™ĞÍ…Ù•¥¸Ñ¡¥Ì‰É½İÍ•È¸½¹¹•Ğİ…±±•Ğ…¹‰…­•¹Ñ¼Í…Ù”¥ĞÑ¼9•ÍĞ¸ˆìÉ•¹‘•È ¤ìô(€€€É•ÑÕÉ¸™…±Í”ì(€ô(€ÑÉäì(€€€½¹ÍĞ‘É…™Ğ€ô…İ…¥Ğ…Á¥I•ÅÕ•ÍĞ¡ÍÑ…Ñ”¹½±±•Ñ¥½¹%€ü€½½±±•Ñ¥½¹Ì¼‘íÍÑ…Ñ”¹½±±•Ñ¥½¹%‘õ€€è€ˆ½½±±•Ñ¥½¹Ìˆ°ì(€€€€€µ•Ñ¡½èÍÑ…Ñ”¹½±±•Ñ¥½¹%€ü€‰AQ ˆ€è€‰A=MPˆ°(€€€€€‰½‘äè)M=8¹ÍÑÉ¥¹¥™ä¡‘É…™ÑA…å±½… ¤¤(€€€ô¤ì(€€€ÍÑ…Ñ”¹½±±•Ñ¥½¹%€ô‘É…™Ğ¹¥ì(€€€±½…±MÑ½É…”¹Í•Ñ%Ñ•´ ‰¹•ÍÑÉ…™Ñ½±±•Ñ¥½¹%ˆ°‘É…™Ğ¹¥¤ì(€€€ÍÑ…Ñ”¹¹½Ñ¥”€ô€‰É…™ĞÍ…Ù•Í•ÕÉ•±äÑ¼9•ÍĞ¸ˆì(€€€¥˜€ …Í¥±•¹Ğ¤É•¹‘•È ¤ì(€€€É•ÑÕÉ¸ÑÉÕ”ì(€ô…Ñ €¡•ÉÉ½È¤ì(€€€ÍÑ…Ñ”¹¹½Ñ¥”€ôÉ…™ĞÍ…Ù”™…¥±•è€‘í•ÉÉ½È¹µ•ÍÍ…•õ€ì(€€€¥˜€ …Í¥±•¹Ğ¤É•¹‘•È ¤ì(€€€É•ÑÕÉ¸™…±Í”ì(€ô)ô()…Íå¹Œ™Õ¹Ñ¥½¸½¹Ñ¥¹Õ•1…Õ¹  ¤ì(€…İ…¥ĞÍ…Ù•É…™Ğ¡ÑÉÕ”¤ì(€Í•ÑMÑ•À¡5…Ñ ¹µ¥¸¡ÍÑ…Ñ”¹±…Õ¹¡MÑ•À€¬€Ä°€Ü¤¤ì)ô()…Íå¹Œ™Õ¹Ñ¥½¸ÕÁ±½…‘ÉÑİ½É¬¡™¥±•Ì¤ì(€¥˜€ …™¥±•Ìü¹±•¹Ñ ¤É•ÑÕÉ¸ì(€¥˜€ …ÍÑ…Ñ”¹½±±•Ñ¥½¹%¤…İ…¥ĞÍ…Ù•É…™Ğ¡ÑÉÕ”¤ì(€¥˜€¡ÍÑ…Ñ”¹‰…­•¹€„ôô€‰½¹±¥¹”ˆñğ€…ÍÑ…Ñ”¹…ÕÑ¡Q½­•¸ñğ€…ÍÑ…Ñ”¹½±±•Ñ¥½¹%¤ì(€€€ÍÑ…Ñ”¹¹½Ñ¥”€ô€‘í™¥±•Ì¹±•¹Ñ¡ô™¥±”¡Ì¤Í•±•Ñ•¸½¹¹•ĞÑ¡”‰…­•¹…¹İ…±±•ĞÑ¼ÕÁ±½…Ñ¼%AL¹€ì(€€€É•¹‘•È ¤ì(€€€É•ÑÕÉ¸ì(€ô(€ÑÉäì(€€€½¹ÍĞ™½É´€ô¹•Ü½Éµ…Ñ„ ¤ì(€€€™½É´¹…ÁÁ•¹ ‰½±±•Ñ¥½¹%ˆ°ÍÑ…Ñ”¹½±±•Ñ¥½¹%¤ì(€€€l¸¸¹™¥±•Ít¹™½É…  ¡™¥±”¤€ôø™½É´¹…ÁÁ•¹ ‰™¥±”ˆ°™¥±”¤¤ì(€€€½¹ÍĞÉ•ÍÕ±Ğ€ô…İ…¥Ğ…Á¥I•ÅÕ•ÍĞ ˆ½ÍÑ½É…”½…ÉÑİ½É¬ˆ°ìµ•Ñ¡½è€‰A=MPˆ°‰½‘äè™½É´ô¤ì(€€€ÍÑ…Ñ”¹¹½Ñ¥”€ô€‘íÉ•ÍÕ±Ğ¹…ÍÍ•ÑÌ¹±•¹Ñ¡ô…ÉÑİ½É¬™¥±”¡Ì¤ÕÁ±½…‘•…¹Á¥¹¹•Ñ¼%AL¹€ì(€ô…Ñ €¡•ÉÉ½È¤ì(€€€ÍÑ…Ñ”¹¹½Ñ¥”€ôÉÑİ½É¬ÕÁ±½…™…¥±•è€‘í•ÉÉ½È¹µ•ÍÍ…•õ€ì(€ô(€É•¹‘•È ¤ì)ô)™Õ¹Ñ¥½¸ÉÕ¹I•…‘¥¹•ÍÌ ¤ìÍÑ…Ñ”¹É•…‘¥¹•ÍÌ€ô€‰I•ÅÕ¥É•Ì±¥Ù”]…µ¤½Y¥•´¡•¬ˆìÉ•¹‘•È ¤ìô)™Õ¹Ñ¥½¸…‘‘9•Ñİ½É¬ ¤ìÍÑ…Ñ”¹‘•Á±½åµ•¹ÑMÑ…Ñ”€ô€‰UÍ”İ…±±•Ñ}…‘‘Ñ¡•É•Õµ¡…¥¸İ¥Ñ •¹ÑÉ…±¥é•I½‰¥¹¡½½¡…¥¸½¹™¥œ¸ˆìÉ•¹‘•È ¤ìô)™Õ¹Ñ¥½¸Íİ¥Ñ¡9•Ñİ½É¬ ¤ìÍÑ…Ñ”¹‘•Á±½åµ•¹ÑMÑ…Ñ”€ô€‰UÍ”İ…±±•Ñ}Íİ¥Ñ¡Ñ¡•É•Õµ¡…¥¸…¹Ù…±¥‘…Ñ”¡…¥¹%‰•™½É”‘•Á±½åµ•¹Ğ¸ˆìÉ•¹‘•È ¤ìô)™Õ¹Ñ¥½¸Í¡½İ•Á±½å	±½­• ¤ìÍÑ…Ñ”¹‘•Á±½åµ•¹ÑMÑ…Ñ”€ô€‰9¼ÑÉ…¹Í…Ñ¥½¸Í•¹Ğ¥¸Ñ¡¥ÌÍÑ…Ñ¥ŒÁÉ•Ù¥•Ü¸]¥É”]…µ¤€¬Y¥•´Í¥µÕ±…Ñ¥½¸‰•™½É”•¹…‰±¥¹œ‘•Á±½åµ•¹Ğ¸ˆìÉ•¹‘•È ¤ìô)™Õ¹Ñ¥½¸Í¡½İ5¥¹Ñ	±½­• ¤ìÍÑ…Ñ”¹µ¥¹ÑMÑ…Ñ”€ô€‰9¼µ¥¹ĞÑÉ…¹Í…Ñ¥½¸Í•¹Ğ¥¸Ñ¡¥ÌÍÑ…Ñ¥ŒÁÉ•Ù¥•Ü¸I•…½¹ÑÉ…ĞÍÑ…Ñ”…¹Í¥µÕ±…Ñ”µ¥¹Ğ‰•™½É”•¹…‰±¥¹œ¸ˆìÉ•¹‘•È ¤ìô)™Õ¹Ñ¥½¸Ñ¥±Ñ5½‘•°¡•Ù•¹Ğ¤ì(€½¹ÍĞµ½‘•°€ô‘½Õµ•¹Ğ¹•Ñ±•µ•¹Ñ	å% ‰¡•É½5½‘•°ˆ¤ì(€¥˜€ …µ½‘•°¤É•ÑÕÉ¸ì(€½¹ÍĞÉ•Ğ€ô•Ù•¹Ğ¹ÕÉÉ•¹ÑQ…É•Ğ¹•Ñ	½Õ¹‘¥¹±¥•¹ÑI•Ğ ¤ì(€½¹ÍĞà€ô€ ¡•Ù•¹Ğ¹±¥•¹Ñ`€´É•Ğ¹±•™Ğ¤€¼É•Ğ¹İ¥‘Ñ €´€¸Ô¤€¨€ÄÀì(€½¹ÍĞä€ô€ ¡•Ù•¹Ğ¹±¥•¹Ñd€´É•Ğ¹Ñ½À¤€¼É•Ğ¹¡•¥¡Ğ€´€¸Ô¤€¨€´Øì(€µ½‘•°¹ÍÑå±”¹ÑÉ…¹Í™½É´€ôÉ½Ñ…Ñ•d ‘íáõ‘•œ¤É½Ñ…Ñ•` ‘íåõ‘•œ¥€ì)ô)™Õ¹Ñ¥½¸É•Í•Ñ5½‘•° ¤ì(€½¹ÍĞµ½‘•°€ô‘½Õµ•¹Ğ¹•Ñ±•µ•¹Ñ	å% ‰¡•É½5½‘•°ˆ¤ì(€¥˜€¡µ½‘•°¤µ½‘•°¹ÍÑå±”¹ÑÉ…¹Í™½É´€ô€ˆˆì)ô()™Õ¹Ñ¥½¸…¹¥µ…Ñ•½Õ¹Ñ•ÉÌ¡É½½Ğ€ô‘½Õµ•¹Ğ¤ì(€½¹ÍĞ½Õ¹Ñ•ÉÌ€ôl¸¸¹É½½Ğ¹ÅÕ•ÉåM•±•Ñ½É±° ‰m‘…Ñ„µ½Õ¹ĞµÑ½tˆ¥tì(€¥˜€ …½Õ¹Ñ•ÉÌ¹±•¹Ñ ¤É•ÑÕÉ¸ì((€½¹ÍĞÉ•‘Õ•5½Ñ¥½¸€ôİ¥¹‘½Ü¹µ…Ñ¡5•‘¥„ ˆ¡ÁÉ•™•ÉÌµÉ•‘Õ•µµ½Ñ¥½¸èÉ•‘Õ”¤ˆ¤¹µ…Ñ¡•Ìì(€½¹ÍĞÉÕ¸€ô€¡Í•Ñ¥½¸¤€ôøì(€€€½¹ÍĞÍ•Ñ¥½¹½Õ¹Ñ•ÉÌ€ôl¸¸¹Í•Ñ¥½¸¹ÅÕ•ÉåM•±•Ñ½É±° ‰m‘…Ñ„µ½Õ¹ĞµÑ½tˆ¥tì(€€€Í•Ñ¥½¹½Õ¹Ñ•ÉÌ¹™½É…  ¡½Õ¹Ñ•È¤€ôøì(€€€€€¥˜€¡½Õ¹Ñ•È¹‘…Ñ…Í•Ğ¹½Õ¹Ñ•€ôôô€‰ÑÉÕ”ˆ¤É•ÑÕÉ¸ì(€€€€€½Õ¹Ñ•È¹‘…Ñ…Í•Ğ¹½Õ¹Ñ•€ô€‰ÑÉÕ”ˆì(€€€€€½¹ÍĞÑ…É•Ğ€ô9Õµ‰•È¡½Õ¹Ñ•È¹‘…Ñ…Í•Ğ¹½Õ¹ÑQ¼ñğ€À¤ì(€€€€€¥˜€¡É•‘Õ•5½Ñ¥½¸¤ì(€€€€€€€½Õ¹Ñ•È¹Ñ•áÑ½¹Ñ•¹Ğ€ôMÑÉ¥¹œ¡Ñ…É•Ğ¤ì(€€€€€€€É•ÑÕÉ¸ì(€€€€€ô(€€€€€½¹ÍĞ‘ÕÉ…Ñ¥½¸€ô€ÄÈÀÀì(€€€€€½¹ÍĞÍÑ…ÉĞ€ôÁ•É™½Éµ…¹”¹¹½Ü ¤ì(€€€€€½¹ÍĞÑ¥¬€ô€¡¹½Ü¤€ôøì(€€€€€€€½¹ÍĞÁÉ½É•ÍÌ€ô5…Ñ ¹µ¥¸ ¡¹½Ü€´ÍÑ…ÉĞ¤€¼‘ÕÉ…Ñ¥½¸°€Ä¤ì(€€€€€€€½¹ÍĞ•…Í•€ô€Ä€´5…Ñ ¹Á½Ü Ä€´ÁÉ½É•ÍÌ°€Ì¤ì(€€€€€€€½Õ¹Ñ•È¹Ñ•áÑ½¹Ñ•¹Ğ€ôMÑÉ¥¹œ¡5…Ñ ¹É½Õ¹¡Ñ…É•Ğ€¨•…Í•¤¤ì(€€€€€€€¥˜€¡ÁÉ½É•ÍÌ€ğ€Ä¤É•ÅÕ•ÍÑ¹¥µ…Ñ¥½¹É…µ”¡Ñ¥¬¤ì(€€€€€ôì(€€€€€É•ÅÕ•ÍÑ¹¥µ…Ñ¥½¹É…µ”¡Ñ¥¬¤ì(€€€ô¤ì(€ôì((€½¹ÍĞÍ•Ñ¥½¹Ì€ôl¸¸¹É½½Ğ¹ÅÕ•ÉåM•±•Ñ½É±° ‰m‘…Ñ„µ½Õ¹Ñ•ÈµÍ•Ñ¥½¹tˆ¥tì(€¥˜€ „ ‰%¹Ñ•ÉÍ•Ñ¥½¹=‰Í•ÉÙ•Èˆ¥¸İ¥¹‘½Ü¤¤ì(€€€Í•Ñ¥½¹Ì¹™½É… ¡ÉÕ¸¤ì(€€€É•ÑÕÉ¸ì(€ô((€½¹ÍĞ½‰Í•ÉÙ•È€ô¹•Ü%¹Ñ•ÉÍ•Ñ¥½¹=‰Í•ÉÙ•È ¡•¹ÑÉ¥•Ì¤€ôøì(€€€•¹ÑÉ¥•Ì¹™½É…  ¡•¹ÑÉä¤€ôøì(€€€€€¥˜€ …•¹ÑÉä¹¥Í%¹Ñ•ÉÍ•Ñ¥¹œ¤É•ÑÕÉ¸ì(€€€€€ÉÕ¸¡•¹ÑÉä¹Ñ…É•Ğ¤ì(€€€€€½‰Í•ÉÙ•È¹Õ¹½‰Í•ÉÙ”¡•¹ÑÉä¹Ñ…É•Ğ¤ì(€€€ô¤ì(€ô°ìÑ¡É•Í¡½±è€À¸ÌÔô¤ì((€Í•Ñ¥½¹Ì¹™½É…  ¡Í•Ñ¥½¸¤€ôø½‰Í•ÉÙ•È¹½‰Í•ÉÙ”¡Í•Ñ¥½¸¤¤ì)ô()™Õ¹Ñ¥½¸É•¹‘•È ¤ì(€½¹ÍĞÉ½ÕÑ”€ôÍÑ…Ñ”¹É½ÕÑ”ì(€±•Ğ¡Ñµ°ì(€¥˜€¡É½ÕÑ”€ôôô€ˆ¼ˆ¤¡Ñµ°€ô¡½µ•A…” ¤ì(€•±Í”¥˜€¡É½ÕÑ”€ôôô€ˆ½±…Õ¹ ˆ¤¡Ñµ°€ô±…Õ¹¡A…” ¤ì(€•±Í”¥˜€¡É½ÕÑ”€ôôô€ˆ½µ¥¹Ğˆ¤¡Ñµ°€ôµ¥¹ÑA…” ¤ì(€•±Í”¥˜€¡É½ÕÑ”¹ÍÑ…ÉÑÍ]¥Ñ  ˆ½µ¥¹Ğ¼ˆ¤¤¡Ñµ°€ôµ¥¹Ñ½±±•Ñ¥½¹A…”¡É½ÕÑ”¹ÍÁ±¥Ğ ˆ¼ˆ¤¹Á½À ¤¤ì(€•±Í”¥˜€¡É½ÕÑ”€ôôô€ˆ½•áÁ±½É”ˆ¤¡Ñµ°€ô•áÁ±½É•A…” ¤ì(€•±Í”¥˜€¡É½ÕÑ”€ôôô€ˆ½‘…Í¡‰½…Éˆ¤¡Ñµ°€ô‘…Í¡‰½…É‘A…” ¤ì(€•±Í”¥˜€¡É½ÕÑ”€ôôô€ˆ½…‘µ¥¸ˆ¤¡Ñµ°€ô…‘µ¥¹A…” ¤ì(€•±Í”¥˜€¡É½ÕÑ”¹ÍÑ…ÉÑÍ]¥Ñ  ˆ½½±±•Ñ¥½¸¼ˆ¤¤¡Ñµ°€ô½±±•Ñ¥½¹A…”¡É½ÕÑ”¹ÍÁ±¥Ğ ˆ¼ˆ¤¹Á½À ¤¤ì(€•±Í”¡Ñµ°€ô¡½µ•A…” ¤ì(€‘½Õµ•¹Ğ¹•Ñ±•µ•¹Ñ	å% ‰…ÁÀˆ¤¹¥¹¹•É!Q50€ô¡Ñµ°ì(€…¹¥µ…Ñ•½Õ¹Ñ•ÉÌ¡‘½Õµ•¹Ğ¤ì)ô()½¹ÍĞ±½…±É…™Ğ€ô±½…±MÑ½É…”¹•Ñ%Ñ•´ ‰¹•ÍÑ1…Õ¹¡É…™Ğˆ¤ì)¥˜€¡±½…±É…™Ğ¤ì(€ÑÉäìÍÑ…Ñ”¹±…Õ¹ €ôì€¸¸¹ÍÑ…Ñ”¹±…Õ¹ °€¸¸¹)M=8¹Á…ÉÍ”¡±½…±É…™Ğ¤ôìô…Ñ íô)ô)É•¹‘•È ¤ì)¡•­	…­•¹ ¤ì
+  return `<section class="section"><div class="section-head"><div><div class="kicker">Live Nest mints</div><h2>Collections deployed through Nest.</h2></div><p>These drops represent collections created on Nest. Buyers can open each mint page, select quantity, connect wallet, and mint once live contract calls are wired.</p></div><div class="mint-list">${platformCollections.map(platformRow).join("")}</div></section>`;
+}
+
+function platformRow(c) {
+  const price = c.price === "Free" ? "Free" : `${c.price} ETH`;
+  const progress = Math.round(c.minted / c.supply * 100);
+  return `<article class="collection-row"><a class="row-art" style="${artStyle(c.art || 0)}" href="#/mint/${c.id}"></a><div><span class="state-label">${c.status}</span><h3>${c.name}</h3><p>${c.description}</p><div class="row-meta"><span>${c.creator}</span><span>${price}</span><span>${c.minted}/${c.supply} minted</span><span>${c.endsIn} left</span></div><div class="progress"><span style="width:${progress}%"></span></div></div><div class="row-links"><a href="#/mint/${c.id}">Open mint page</a><a href="${explorerAddress(c.contractAddress)}" target="_blank" rel="noopener noreferrer">View contract</a></div></article>`;
+}
+
+function collectionRow(c) {
+  return `<article class="collection-row"><a class="row-art" style="${collectionArtStyle(c)}" href="#/collection/${c.id}"></a><div><span class="state-label">${c.verified ? "OpenSea verified" : "OpenSea"}</span><h3>${c.name}</h3><p>${c.description}</p><div class="row-meta"><span>Floor ${c.floor}</span><span class="metric-${c.changeType}">${c.change} 1d</span><span>${c.status}</span></div></div><div class="row-links"><a href="${c.openseaUrl || "https://opensea.io"}" target="_blank" rel="noopener noreferrer">View on OpenSea</a><span>Robinhood Chain</span></div></article>`;
+}
+
+function openseaEmptyState(title, copy) {
+  return `<article class="panel opensea-empty"><div><span class="state-label">OpenSea data</span><h3>${title}</h3><p>${copy}</p></div><div class="technical-table"><div><span>Source</span><strong>${OPENSEA_SOURCE.source}</strong></div><div><span>Chain</span><strong>${OPENSEA_SOURCE.chain}</strong></div><div><span>Last checked</span><strong>${OPENSEA_SOURCE.checkedAt}</strong></div><div><span>Status</span><strong>${OPENSEA_SOURCE.status}</strong></div><div><span>Requirement</span><strong>${OPENSEA_SOURCE.note}</strong></div></div><div class="actions"><a class="btn primary" href="https://opensea.io" target="_blank" rel="noopener noreferrer">Open OpenSea</a><a class="btn ghost" href="${OPENSEA_SOURCE.docsUrl}" target="_blank" rel="noopener noreferrer">API docs</a></div></article>`;
+}
+
+function processSection() {
+  const steps = [
+    ["01", "Upload artwork"],
+    ["02", "Create metadata"],
+    ["03", "Configure mint"],
+    ["04", "Deploy on Robinhood Chain"],
+    ["05", "Share the mint page"],
+    ["06", "Trade after mint"]
+  ];
+  return `<section class="section"><div class="section-head"><div><div class="kicker">Launch process</div><h2>From file to verified contract.</h2></div></div><div class="step-list">${steps.map(([n,t])=>`<div class="step"><span>${n}</span><h3>${t}</h3></div>`).join("")}</div></section>`;
+}
+
+function chainSection() {
+  return `<section class="section editorial-split"><div><div class="kicker">Robinhood Chain</div><h2>Creator-owned ERC-721 contracts on an EVM network.</h2><p>Deploy standard ERC-721 metadata contracts, pay gas in ETH, verify bytecode on the public explorer, and expose metadata for OpenSea indexing when marketplace support is available.</p></div><div class="technical-table"><div><span>Network</span><strong>${ACTIVE_NETWORK.name}</strong></div><div><span>Chain ID</span><strong>${ACTIVE_NETWORK.chainId}</strong></div><div><span>RPC</span><strong>${ACTIVE_NETWORK.rpcUrl}</strong></div><div><span>Explorer</span><strong>${ACTIVE_NETWORK.explorer}</strong></div><div><span>Standard</span><strong>ERC-721 + ERC-2981 signaling</strong></div></div></section>`;
+}
+
+function economicsSection() {
+  return `<section class="section economics" data-counter-section><div><div class="kicker">Creator economics</div><h2>Primary revenue is accounted onchain.</h2><p>The 5% Nest fee applies to primary mint revenue. Gas is paid separately by the transaction initiator. ERC-2981 royalties are signaled onchain, but secondary marketplaces may choose whether to enforce royalties.</p></div><div class="split-diagram"><div><strong><span class="count-number" data-count-to="95">0</span>%</strong><span>Creator</span></div><div><strong><span class="count-number" data-count-to="5">0</span>%</strong><span>Nest</span></div></div></section>`;
+}
+
+function explorePreviewSection() {
+  return `<section class="section"><div class="section-head"><div><div class="kicker">Explore collections</div><h2>Robinhood collections trading on OpenSea.</h2></div><p>Floor and one-day movement are seeded from the visible OpenSea ranking list. Live floor, volume, listing, and activity sync belongs in the server OpenSea adapter.</p></div>${openseaCollections.length ? `<div class="grid gallery-grid">${openseaCollections.map(card).join("")}</div>` : openseaEmptyState("OpenSea discovery is waiting for indexed data", "No real Robinhood Chain NFT collection records were found publicly, so the app is no longer displaying sample collections.")}</section>`;
+}
+
+function card(c) {
+  return `<article class="card market-card opensea-card"><div class="opensea-card-head"><a class="collection-avatar opensea-art" style="${collectionArtStyle(c)}" href="#/collection/${c.id}" aria-label="${c.name}"></a><div><span class="state-label">${c.verified ? "OpenSea verified" : "OpenSea"}</span><h3>${c.name}</h3><p>${c.status}</p></div></div><div class="card-metrics"><div><span>Floor</span><strong>${c.floor}</strong></div><div><span>1d</span><strong class="metric-${c.changeType}">${c.change}</strong></div></div><div class="opensea-card-actions"><a class="market-link" href="#/collection/${c.id}">Details</a><a class="market-link" href="${c.openseaUrl}" target="_blank" rel="noopener noreferrer">OpenSea</a></div></article>`;
+}
+
+function launchPage() {
+  const steps = ["Identity", "Artwork", "Metadata", "Configuration", "Storage", "Contract preview", "Deploy"];
+  return shell(`<main class="page app-layout"><aside class="side panel">${steps.map((s,i)=>`<button class="${state.launchStep === i + 1 ? "active" : ""}" onclick="setStep(${i+1})">${String(i+1).padStart(2,"0")} ${s}</button>`).join("")}</aside><section>${state.notice ? `<div class="notice ${state.notice.toLowerCase().includes("failed") ? "error" : "success"}">${state.notice}</div>` : ""}${launchStep()}</section></main>`);
+}
+
+function launchStep() {
+  const n = state.launchStep;
+  if (n === 1) return stepIdentity();
+  if (n === 2) return stepArtwork();
+  if (n === 3) return stepMetadata();
+  if (n === 4) return stepConfiguration();
+  if (n === 5) return stepStorage();
+  if (n === 6) return stepContractPreview();
+  return stepDeploy();
+}
+
+function stepFrame(kicker, title, body, next = true) {
+  return `<div class="section-head"><div><div class="kicker">${kicker}</div><h2>${title}</h2></div></div>${body}<div class="flow-actions"><button class="btn ghost" onclick="saveDraft()">Save draft</button>${state.launchStep > 1 ? `<button class="btn ghost" onclick="setStep(${state.launchStep - 1})">Back</button>` : ""}${next ? `<button class="btn primary" onclick="continueLaunch()">Continue</button>` : ""}</div>`;
+}
+
+function field(label, key, type = "text", cls = "") {
+  const value = state.launch[key] ?? "";
+  if (type === "textarea") return `<div class="field ${cls}"><label>${label}</label><textarea oninput="setLaunch('${key}', this.value)">${value}</textarea></div>`;
+  return `<div class="field ${cls}"><label>${label}</label><input type="${type}" value="${value}" oninput="setLaunch('${key}', this.value)" /></div>`;
+}
+
+function stepIdentity() {
+  return stepFrame("Step 01", "Collection identity", `<div class="panel form-grid">${field("Collection name","name")}${field("Symbol","symbol")}${field("Description","description","textarea","full")}${field("Creator display name","creatorName")}${field("Creator wallet","creatorWallet")}${field("Website","website")}${field("X account","x")}${field("Telegram or Discord","social")}<div class="field"><label>Collection avatar</label><input type="file" accept="image/png,image/jpeg,image/webp,image/gif"></div><div class="field"><label>Collection banner</label><input type="file" accept="image/png,image/jpeg,image/webp,image/gif"></div></div>`);
+}
+
+function stepArtwork() {
+  return stepFrame("Step 02", "Artwork", `<div class="grid cols-2"><div class="panel upload-zone"><div><h3>Upload artwork</h3><p class="artist-rec"><a href="https://frontman-plays.xyz" target="_blank" rel="noopener noreferrer">Donâ€™t have your artwork? Hire our top artist</a></p><p>Supports PNG, JPEG, WEBP, GIF, optional animation/video where compatible, and ZIP bulk upload. Production upload validates file type and size on both client and server.</p><input type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,model/gltf-binary" onchange="uploadArtwork(this.files)"></div></div><div class="panel"><h3>Edition types</h3><table class="table"><tr><th>Type</th><th>Status</th></tr><tr><td>Single edition</td><td>Ready</td></tr><tr><td>Open edition</td><td>Ready</td></tr><tr><td>Repeated artwork</td><td>Ready</td></tr><tr><td>Unique files</td><td>Ready</td></tr><tr><td>ZIP bulk upload</td><td>Backend connected</td></tr></table></div></div>`);
+}
+
+function stepMetadata() {
+  return stepFrame("Step 03", "Metadata", `<div class="grid cols-2"><div class="panel form-grid">${field("Automatic NFT name pattern","name")}${field("Collection description","description","textarea","full")}<div class="field"><label>Trait type</label><input value="Background"></div><div class="field"><label>Trait value</label><input value="Lime"></div><div class="field"><label>External URL</label><input value="${state.launch.website}"></div><div class="field"><label>Background color</label><input value="#C7F000"></div><div class="field full"><label>Bulk CSV trait import</label><input type="file" accept=".csv"></div></div><div class="panel"><h3>Standards-compatible JSON</h3><pre class="code">${metadataJson()}</pre><button class="btn ghost">Download metadata backup</button></div></div>`);
+}
+
+function metadataJson() {
+  return JSON.stringify({
+    name: `${state.launch.name} #1`,
+    description: state.launch.description,
+    image: "ipfs://IMAGE_CID/1.png",
+    external_url: state.launch.website,
+    attributes: [{ trait_type: "Background", value: "Lime" }]
+  }, null, 2);
+}
+
+function stepConfiguration() {
+  return stepFrame("Step 04", "Collection configuration", `<div class="panel form-grid">${field("Total supply","supply","number")}${field("Mint price in ETH","price")}${field("Maximum mint per wallet","maxWallet","number")}${field("Maximum mint per transaction","maxTx","number")}<div class="field"><label>Mint start time</label><input type="datetime-local"></div><div class="field"><label>Optional mint end time</label><input type="datetime-local"></div><div class="field"><label>Public mint enabled</label><select><option>Enabled</option><option>Disabled</option></select></div><div class="field"><label>Allowlist phase</label><select><option>Disabled</option><option>Enabled</option></select></div><div class="field"><label>Allowlist mint price</label><input value="0.012"></div><div class="field"><label>Allowlist wallet limits</label><input value="1"></div><div class="field"><label>Reveal</label><select><option>Immediate reveal</option><option>Delayed reveal</option></select></div>${field("Creator payout wallet","payout")}${field("Contract owner wallet","owner")}<div class="field"><label>Secondary royalty percentage</label><input value="5"></div><div class="field full"><strong>Mandatory Nest fee: 5% of primary mint revenue</strong></div></div>`);
+}
+
+function stepStorage() {
+  return stepFrame("Step 05", "Storage verification", `<div class="panel"><p>Production deployment must upload artwork and metadata through a server-side IPFS provider adapter. Credentials stay server-side.</p><pre class="code">StorageProvider {
+  uploadFile()
+  uploadDirectory()
+  uploadJSON()
+  pinCID()
+  verifyCID()
+}</pre><table class="table"><tr><th>Requirement</th><th>Status</th></tr><tr><td>Artwork CID verified</td><td>Backend required</td></tr><tr><td>Metadata CID verified</td><td>Backend required</td></tr><tr><td>Metadata image URI resolves</td><td>Backend required</td></tr><tr><td>Manifest saved</td><td>Backend required</td></tr></table></div>`);
+}
+
+function stepContractPreview() {
+  return stepFrame("Step 06", "Contract preview", `<div class="panel technical-table"><div><span>Network</span><strong>${ACTIVE_NETWORK.name}</strong></div><div><span>Chain ID</span><strong>${ACTIVE_NETWORK.chainId}</strong></div><div><span>Contract type</span><strong>RobinhoodNFTCollection ERC-721</strong></div><div><span>Collection owner</span><strong>${state.launch.owner}</strong></div><div><span>Creator payout wallet</span><strong>${state.launch.payout}</strong></div><div><span>Supply</span><strong>${state.launch.supply}</strong></div><div><span>Mint price</span><strong>${state.launch.price} ETH</strong></div><div><span>Nest fee</span><strong>5% of primary mint revenue</strong></div><div><span>Metadata base URI</span><strong>ipfs://METADATA_CID/</strong></div><div><span>Estimated gas</span><strong>Requires Viem simulation</strong></div><div><span>Wallet balance</span><strong>Requires connected wallet read</strong></div></div>`);
+}
+
+function stepDeploy() {
+  const deploySettings = [
+    ["Wallet connected", state.readiness, "Creator wallet must connect before Nest can prepare a deploy transaction."],
+    ["Correct Robinhood Chain network", state.readiness, `Wallet chain ID must match ${ACTIVE_NETWORK.chainId} before deployment.`],
+    ["Valid connected address", state.readiness, "Nest stores this address as deployer, owner, and session identity unless changed."],
+    ["Enough ETH for gas", state.readiness, "Creator pays network gas separately from mint revenue and Nest fees."],
+    ["Artwork uploaded to IPFS", state.readiness, "Images must be pinned before contract metadata can point to permanent URIs."],
+    ["Metadata verified", state.readiness, "Token JSON, image links, and contractURI should resolve before deployment."],
+    ["Collection settings valid", state.readiness, "Supply, price, wallet limits, payout wallet, and royalty values must be final."]
+  ];
+  return stepFrame("Step 07", "Deploy", `<div class="grid cols-2"><div class="panel"><h3>Deploy settings</h3><table class="table deploy-docs-table"><tr><th>Setting</th><th>Status</th><th>Docs</th></tr>${deploySettings.map(([setting,status,docs])=>`<tr><td>${setting}</td><td>${status}</td><td>${docs}</td></tr>`).join("")}</table><button class="btn primary" onclick="runReadiness()">Run readiness check</button><button class="btn ghost" onclick="addNetwork()">Add Robinhood Chain</button><button class="btn ghost" onclick="switchNetwork()">Switch Network</button></div><div class="panel"><h3>Transaction states</h3>${txStates()}<p class="warning">Smart-contract deployment is permanent. Review supply, mint price, payout wallet, metadata, ownership, and Nest fee before confirming.</p><button class="btn primary" onclick="showDeployBlocked()">Prepare wallet transaction</button><p>${state.deploymentState}</p></div></div>`, false);
+}
+
+function txStates() {
+  return `<ol class="state-list">${["Awaiting wallet confirmation","Transaction submitted","Pending confirmation","Contract created","Waiting for indexer","Metadata verified","OpenSea discovery pending","Launch complete","Failed","Replaced","Dropped"].map(s=>`<li>${s}</li>`).join("")}</ol>`;
+}
+
+function mintPage() {
+  const featured = platformCollections[0];
+  return shell(`<main class="page"><section class="section-head"><div><div class="kicker">Nest mint desk</div><h2>Mint collections deployed on Nest.</h2></div><p>Only Nest-created collections appear in this section. OpenSea collections stay in Explore as external marketplace discovery.</p></section><section class="mint-layout"><div><div class="drop-art" style="${artStyle(featured.art)}"></div><div class="section grid gallery-grid">${platformCollections.map(platformCard).join("")}</div></div>${mintModule(featured)}</section></main>`);
+}
+
+function mintCollectionPage(id) {
+  const c = platformCollections.find((item) => item.id.toLowerCase() === id.toLowerCase()) || platformCollections[0];
+  return shell(`<main class="page mint-layout"><section><div class="drop-art" style="${artStyle(c.art)}"></div><div class="section grid cols-3">${[0,1,2,3,4,5].map(i=>`<div class="nft-art thumb-large" style="${artStyle(c.art + i)}"></div>`).join("")}</div></section>${mintModule(c)}</main>`);
+}
+
+function platformCard(c) {
+  const price = c.price === "Free" ? "Free" : `${c.price} ETH`;
+  const progress = Math.round(c.minted / c.supply * 100);
+  return `<article class="card market-card"><a href="#/mint/${c.id}"><div class="nft-art" style="${artStyle(c.art)}"></div></a><div class="card-body"><span class="state-label">${c.status}</span><h3>${c.name}</h3><p>${c.creator}</p><div class="progress"><span style="width:${progress}%"></span></div><div class="card-metrics"><div><span>Minted</span><strong>${c.minted}/${c.supply}</strong></div><div><span>Price</span><strong>${price}</strong></div></div><a class="market-link" href="#/mint/${c.id}">Mint collection</a></div></article>`;
+}
+
+function mintModule(c) {
+  const price = c.price === "Free" ? "Free" : `${c.price} ETH`;
+  const progress = Math.round(c.minted / c.supply * 100);
+  return `<aside class="panel mint-module"><span class="state-label">${c.status}</span><h1>${c.name}</h1><p>${c.description}</p>${deployRow("Creator", `${c.creator} / ${c.creatorAddress}`)}${deployRow("Network", ACTIVE_NETWORK.name)}${deployRow("Contract", `<a href="${explorerAddress(c.contractAddress)}" target="_blank" rel="noopener noreferrer">${c.contractAddress}</a>`)}${deployRow("Mint price", price)}${deployRow("Supply", `${c.minted}/${c.supply}`)}${deployRow("Max per wallet", c.maxWallet)}${deployRow("Time left", c.endsIn)}<div class="progress"><span style="width:${progress}%"></span></div><div class="field"><label>Quantity</label><input type="number" min="1" max="${c.maxWallet}" value="1"></div><button class="btn primary block" onclick="showMintBlocked()">Mint NFT</button><p id="mintStatus">${state.mintState}</p><div class="divider"></div><h3>Primary revenue split</h3><p>Creator receives 95%. Nest receives 5% from primary mint revenue. Gas is paid separately by the buyer.</p><h3>Recent mint activity</h3>${platformActivity(c)}</aside>`;
+}
+
+function platformActivity(c) {
+  return [
+    ["Mint", `${c.name} #${Math.max(c.minted - 2, 1)} minted`, "2m ago"],
+    ["Mint", `${c.name} #${Math.max(c.minted - 1, 1)} minted`, "7m ago"],
+    ["Contract", "Primary split enforced", "Factory v1"],
+    ["Metadata", c.metadataCid, "IPFS"]
+  ].map((a,i)=>`<div class="activity-item"><div class="thumb" style="${artStyle(c.art + i)}"></div><div><strong>${a[1]}</strong><div>${a[0]}</div></div><span>${a[2]}</span></div>`).join("");
+}
+
+function collectionPage(address) {
+  const c = openseaCollections.find((item) => item.id.toLowerCase() === address.toLowerCase());
+  if (!c) {
+    return shell(`<main class="page"><section class="section">${openseaEmptyState("Collection not available from OpenSea", "This route only renders live OpenSea-backed Robinhood Chain collection records. Add an OpenSea API key and supported chain slug, then hydrate this page from the collection or contract endpoint.")}</section></main>`);
+  }
+  return shell(`<main class="page mint-layout market-detail-layout"><section class="panel market-detail-panel"><div class="market-detail-identity"><div class="collection-avatar hero-avatar opensea-art" style="${collectionArtStyle(c)}"></div><div><span class="state-label">${c.verified ? "OpenSea verified" : "OpenSea Robinhood Chain"}</span><h1>${c.name}</h1><p>${c.description}</p></div></div><div class="section grid cols-3 market-samples">${[0,1,2,3,4,5].map(i=>`<div class="nft-art thumb-large" style="${artStyle((c.art || 0) + i)}"></div>`).join("")}</div></section><aside class="panel mint-module"><span class="state-label">Marketplace data</span><h2>${c.name}</h2><p>OpenSea discovery record for Robinhood Chain.</p>${deployRow("Source", c.creator || "OpenSea marketplace")}${deployRow("Floor", c.floor)}${deployRow("1d movement", `<span class="metric-${c.changeType}">${c.change}</span>`)}${deployRow("Status", c.status)}${deployRow("OpenSea", c.openseaUrl ? `<a href="${c.openseaUrl}" target="_blank" rel="noopener noreferrer">Open collection search</a>` : "OpenSea URL unavailable")}${deployRow("Contract", c.contractAddress ? `<a href="${explorerAddress(c.contractAddress)}" target="_blank" rel="noopener noreferrer">${c.contractAddress}</a>` : "Pending API hydration")}<div class="divider"></div><h3>Recent market activity</h3>${activityList()}<h3>Disclosures</h3><p>Thumbnails are shown at avatar size because the current source is the OpenSea ranking screenshot. Live API images should replace these when connected.</p></aside></main>`);
+}
+
+function deployRow(a,b) {
+  return `<div class="stat-row"><span>${a}</span><strong>${b}</strong></div>`;
+}
+
+function explorePage() {
+  return shell(`<main class="page explore-layout"><aside class="panel filters"><h3>Filters</h3>${["NFTs / collections","floor price","1d movement","verified","recent activity","Robinhood Chain"].map(x=>`<label><span>${x}</span><select><option>Any</option></select></label>`).join("")}<p class="hint">Current records are seeded from OpenSea ranking visibility. Filters become live when the OpenSea API adapter returns collection rows.</p></aside><section><div class="section-head"><div><div class="kicker">Robinhood Chain discovery</div><h2>Explore OpenSea collections</h2></div></div><div class="actions">${["OpenSea ranked","Verified","Floor under 0.01","Positive 1d","Recently active"].map(x=>`<button class="btn small">${x}</button>`).join("")}</div>${openseaCollections.length ? `<div class="grid gallery-grid">${openseaCollections.map(card).join("")}</div>` : openseaEmptyState("No OpenSea collections loaded", "The discovery page is now wired for real OpenSea data only. Once Robinhood Chain appears in the supported chains response and the API key is configured, collections will render here.")}</section></main>`);
+}
+
+function dashboardPage() {
+  const collectionRows = platformCollections.map(c=>`<tr><td><div class="mini-art" style="${artStyle(c.art || 0)}"></div></td><td>${c.name}</td><td>${c.minted}/${c.supply}</td><td>${c.price === "Free" ? "Free" : `${c.price} ETH`}</td><td><a href="#/mint/${c.id}">Mint page</a></td></tr>`).join("");
+  return shell(`<main class="page"><div class="section-head"><div><div class="kicker">Creator dashboard</div><h2>Manage Nest-deployed collections.</h2></div></div><div class="stats">${["Nest collections","Live collections","Total minted","Primary volume","Creator accrued","Nest fees","Withdrawable","Unique minters"].map((x,i)=>`<div class="stat"><span>${x}</span><strong>${dashboardStat(i)}</strong></div>`).join("")}</div><div class="section grid cols-2"><div class="panel"><h3>Collections deployed on Nest</h3><table class="table"><tr><th>Artwork</th><th>Name</th><th>Minted</th><th>Price</th><th>Link</th></tr>${collectionRows}</table></div><div class="panel"><h3>Creator actions</h3><table class="table"><tr><td>Open mint page</td><td>Public buyer-facing route</td></tr><tr><td>View contract</td><td>Robinhood Chain explorer</td></tr><tr><td>Revenue split</td><td>95% creator / 5% Nest</td></tr><tr><td>Withdraw creator balance</td><td>Contract call placeholder</td></tr><tr><td>Reveal metadata</td><td>Owner action placeholder</td></tr><tr><td>Sync OpenSea</td><td>Marketplace adapter placeholder</td></tr></table><p class="hint">Dashboard totals come from Nest deployments, not external OpenSea rankings.</p></div></div></main>`);
+}
+
+function dashboardStat(index) {
+  const totalMinted = platformCollections.reduce((sum, item) => sum + item.minted, 0);
+  const live = platformCollections.filter((item) => item.status !== "Ended").length;
+  return [platformCollections.length, live, totalMinted, "Onchain read", "Onchain read", "Onchain read", "Contract read", "Indexer sync"][index];
+}
+
+function adminPage() {
+  return shell(`<main class="page"><div class="section-head"><div><div class="kicker">Nest admin</div><h2>Contract-authorized controls only.</h2></div></div><div class="panel"><p>Admin access must be read from connected-wallet contract ownership or explicit authorization. This interface must not rely on a frontend-only role switcher.</p><table class="table"><tr><th>Function</th><th>Authority</th></tr><tr><td>View all factory deployments</td><td>Public indexed data</td></tr><tr><td>Feature/unfeature in app database</td><td>Server-side admin auth</td></tr><tr><td>Hide malicious content from discovery</td><td>Presentation only, does not delete blockchain data</td></tr><tr><td>Pause factory deployment</td><td>Factory owner</td></tr><tr><td>Manage Nest treasury</td><td>Contract permissions</td></tr><tr><td>Withdraw Nest revenue</td><td>Treasury role</td></tr></table></div></main>`);
+}
+
+function activityList() {
+  return integrationActivity.map((a,i)=>`<div class="activity-item"><div class="thumb" style="${artStyle(i)}"></div><div><strong>${a[1]}</strong><div>${a[0]}</div></div><span>${a[2]}</span></div>`).join("");
+}
+
+function setLaunch(key, value) { state.launch[key] = value; }
+function setStep(step) { state.launchStep = step; render(); }
+async function checkBackend() {
+  try {
+    const response = await fetch(`${API_ORIGIN}/health`, { headers: { accept: "application/json" } });
+    if (!response.ok) throw new Error("Nest API unavailable");
+    state.backend = "online";
+    state.backendMessage = "Nest API and database connected";
+    await loadBackendCollections();
+  } catch (error) {
+    state.backend = "offline";
+    state.backendMessage = "Backend offline; demo data remains available";
+  }
+  render();
+}
+
+async function loadBackendCollections() {
+  const result = await apiRequest("/collections?status=LIVE&take=24");
+  if (!Array.isArray(result.items) || !result.items.length) return;
+  platformCollections = result.items.map((c, index) => ({
+    id: c.id,
+    contractAddress: c.contractAddress || "Pending deployment",
+    name: c.name,
+    creator: c.creatorName || "Nest creator",
+    creatorAddress: c.creatorWallet,
+    description: c.description,
+    minted: c.mintedSupply || 0,
+    supply: c.maxSupply,
+    price: weiToEth(c.mintPriceWei),
+    maxWallet: c.maxPerWallet,
+    status: c.status === "LIVE" ? "Live mint" : c.status,
+    endsIn: c.mintEndAt ? new Date(c.mintEndAt).toLocaleDateString() : "Open",
+    deployedAt: "Nest deployment",
+    metadataCid: c.metadataBaseUri || "Metadata pending",
+    art: index % ARTWORK.length
+  }));
+}
+
+function ethToWei(value) {
+  const [whole = "0", decimal = ""] = String(value || "0").split(".");
+  return (BigInt(whole || "0") * 10n ** 18n + BigInt((decimal + "0".repeat(18)).slice(0, 18))).toString();
+}
+
+function weiToEth(value) {
+  if (!value) return "0";
+  const padded = String(value).padStart(19, "0");
+  const whole = padded.slice(0, -18) || "0";
+  const fraction = padded.slice(-18).replace(/0+$/, "").slice(0, 4);
+  return fraction ? `${whole}.${fraction}` : whole;
+}
+
+async function connectWallet() {
+  state.notice = "";
+  if (!window.ethereum) {
+    state.notice = "No EVM wallet detected. Install a compatible wallet to sign in.";
+    render();
+    return;
+  }
+  try {
+    const [walletAddress] = await window.ethereum.request({ method: "eth_requestAccounts" });
+    state.wallet = "connected";
+    state.walletAddress = walletAddress;
+    localStorage.setItem("nestWalletAddress", walletAddress);
+    if (state.backend === "online") {
+      const challenge = await apiRequest("/auth/nonce", { method: "POST", body: JSON.stringify({ walletAddress }) });
+      const signature = await window.ethereum.request({ method: "personal_sign", params: [challenge.message, walletAddress] });
+      const verified = await apiRequest("/auth/verify", { method: "POST", body: JSON.stringify({ sessionId: challenge.sessionId, message: challenge.message, signature }) });
+      state.authToken = verified.token;
+      localStorage.setItem("nestAuthToken", verified.token);
+      state.notice = "Wallet connected and authenticated with Nest.";
+    } else {
+      state.notice = "Wallet connected. Backend is offline, so launch drafts remain local for now.";
+    }
+  } catch (error) {
+    state.notice = `Wallet connection failed: ${error.message}`;
+  }
+  render();
+}
+
+function draftPayload() {
+  const wallet = state.walletAddress || state.launch.creatorWallet;
+  return {
+    name: state.launch.name,
+    symbol: state.launch.symbol,
+    description: state.launch.description,
+    chainId: ACTIVE_NETWORK.chainId,
+    chainName: ACTIVE_NETWORK.name,
+    mintCurrency: ACTIVE_NETWORK.currency,
+    mintPriceWei: ethToWei(state.launch.price),
+    maxSupply: Number(state.launch.supply),
+    maxPerWallet: Number(state.launch.maxWallet),
+    royaltyBps: Number(state.launch.royaltyBps),
+    creatorPayoutWallet: state.launch.payout || wallet,
+    websiteUrl: state.launch.website || undefined,
+    socialUrl: state.launch.social || undefined
+  };
+}
+
+async function saveDraft(silent = false) {
+  if (state.backend !== "online" || !state.authToken) {
+    localStorage.setItem("nestLaunchDraft", JSON.stringify(state.launch));
+    if (!silent) { state.notice = "Draft saved in this browser. Connect wallet and backend to save it to Nest."; render(); }
+    return false;
+  }
+  try {
+    const draft = await apiRequest(state.collectionId ? `/collections/${state.collectionId}` : "/collections", {
+      method: state.collectionId ? "PATCH" : "POST",
+      body: JSON.stringify(draftPayload())
+    });
+    state.collectionId = draft.id;
+    localStorage.setItem("nestDraftCollectionId", draft.id);
+    state.notice = "Draft saved securely to Nest.";
+    if (!silent) render();
+    return true;
+  } catch (error) {
+    state.notice = `Draft save failed: ${error.message}`;
+    if (!silent) render();
+    return false;
+  }
+}
+
+async function continueLaunch() {
+  await saveDraft(true);
+  setStep(Math.min(state.launchStep + 1, 7));
+}
+
+async function uploadArtwork(files) {
+  if (!files?.length) return;
+  if (!state.collectionId) await saveDraft(true);
+  if (state.backend !== "online" || !state.authToken || !state.collectionId) {
+    state.notice = `${files.length} file(s) selected. Connect the backend and wallet to upload to IPFS.`;
+    render();
+    return;
+  }
+  try {
+    const form = new FormData();
+    form.append("collectionId", state.collectionId);
+    [...files].forEach((file) => form.append("file", file));
+    const result = await apiRequest("/storage/artwork", { method: "POST", body: form });
+    state.notice = `${result.assets.length} artwork file(s) uploaded and pinned to IPFS.`;
+  } catch (error) {
+    state.notice = `Artwork upload failed: ${error.message}`;
+  }
+  render();
+}
+function runReadiness() { state.readiness = "Requires live Wagmi/Viem check"; render(); }
+function addNetwork() { state.deploymentState = "Use wallet_addEthereumChain with centralized Robinhood Chain config."; render(); }
+function switchNetwork() { state.deploymentState = "Use wallet_switchEthereumChain and validate chainId before deployment."; render(); }
+function showDeployBlocked() { state.deploymentState = "No transaction sent in this static preview. Wire Wagmi + Viem simulation before enabling deployment."; render(); }
+function showMintBlocked() { state.mintState = "No mint transaction sent in this static preview. Read contract state and simulate mint before enabling."; render(); }
+function tiltModel(event) {
+  const model = document.getElementById("heroModel");
+  if (!model) return;
+  const rect = event.currentTarget.getBoundingClientRect();
+  const x = ((event.clientX - rect.left) / rect.width - .5) * 10;
+  const y = ((event.clientY - rect.top) / rect.height - .5) * -6;
+  model.style.transform = `rotateY(${x}deg) rotateX(${y}deg)`;
+}
+function resetModel() {
+  const model = document.getElementById("heroModel");
+  if (model) model.style.transform = "";
+}
+
+function animateCounters(root = document) {
+  const counters = [...root.querySelectorAll("[data-count-to]")];
+  if (!counters.length) return;
+
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const run = (section) => {
+    const sectionCounters = [...section.querySelectorAll("[data-count-to]")];
+    sectionCounters.forEach((counter) => {
+      if (counter.dataset.counted === "true") return;
+      counter.dataset.counted = "true";
+      const target = Number(counter.dataset.countTo || 0);
+      if (reduceMotion) {
+        counter.textContent = String(target);
+        return;
+      }
+      const duration = 1200;
+      const start = performance.now();
+      const tick = (now) => {
+        const progress = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        counter.textContent = String(Math.round(target * eased));
+        if (progress < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+  };
+
+  const sections = [...root.querySelectorAll("[data-counter-section]")];
+  if (!("IntersectionObserver" in window)) {
+    sections.forEach(run);
+    return;
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      run(entry.target);
+      observer.unobserve(entry.target);
+    });
+  }, { threshold: 0.35 });
+
+  sections.forEach((section) => observer.observe(section));
+}
+
+function render() {
+  const route = state.route;
+  let html;
+  if (route === "/") html = homePage();
+  else if (route === "/launch") html = launchPage();
+  else if (route === "/mint") html = mintPage();
+  else if (route.startsWith("/mint/")) html = mintCollectionPage(route.split("/").pop());
+  else if (route === "/explore") html = explorePage();
+  else if (route === "/dashboard") html = dashboardPage();
+  else if (route === "/admin") html = adminPage();
+  else if (route.startsWith("/collection/")) html = collectionPage(route.split("/").pop());
+  else html = homePage();
+  document.getElementById("app").innerHTML = html;
+  animateCounters(document);
+}
+
+const localDraft = localStorage.getItem("nestLaunchDraft");
+if (localDraft) {
+  try { state.launch = { ...state.launch, ...JSON.parse(localDraft) }; } catch {}
+}
+render();
+checkBackend();
