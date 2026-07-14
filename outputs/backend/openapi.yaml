@@ -1,0 +1,110 @@
+openapi: 3.1.0
+info:
+  title: Nest API
+  version: 1.0.0
+  description: Backend contract for the Nest NFT launchpad.
+servers:
+  - url: https://api.nest.example/v1
+  - url: http://127.0.0.1:8787/v1
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  schemas:
+    Error:
+      type: object
+      properties: { error: { type: string }, details: { type: object } }
+    CollectionInput:
+      type: object
+      required: [name, symbol, description, chainId, chainName, mintCurrency, mintPriceWei, maxSupply, maxPerWallet, royaltyBps, creatorPayoutWallet]
+      properties:
+        name: { type: string, maxLength: 100 }
+        symbol: { type: string, maxLength: 12 }
+        description: { type: string, maxLength: 5000 }
+        chainId: { type: integer, examples: [46630] }
+        chainName: { type: string, examples: [Robinhood Chain Testnet] }
+        mintCurrency: { type: string, examples: [ETH] }
+        mintPriceWei: { type: string, pattern: '^\\d+$' }
+        maxSupply: { type: integer, minimum: 1, maximum: 100000 }
+        maxPerWallet: { type: integer, minimum: 1 }
+        royaltyBps: { type: integer, minimum: 0, maximum: 1000 }
+        creatorPayoutWallet: { type: string }
+        websiteUrl: { type: string, format: uri }
+        socialUrl: { type: string, format: uri }
+        mintStartAt: { type: string, format: date-time }
+        mintEndAt: { type: string, format: date-time }
+paths:
+  /health:
+    get:
+      summary: Health and database check
+      responses: { '200': { description: Healthy } }
+  /auth/nonce:
+    post:
+      summary: Create a wallet sign-in challenge
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [walletAddress], properties: { walletAddress: { type: string } } } } }
+      responses: { '200': { description: Message to sign } }
+  /auth/verify:
+    post:
+      summary: Verify signature and issue session token
+      responses: { '200': { description: Authenticated } }
+  /collections:
+    get:
+      summary: List public collections
+      responses: { '200': { description: Paginated collections } }
+    post:
+      security: [{ bearerAuth: [] }]
+      summary: Create collection draft
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/CollectionInput' } } }
+      responses: { '201': { description: Created }, '400': { description: Invalid input } }
+  /collections/{id}:
+    parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+    get:
+      summary: Get public collection
+      responses: { '200': { description: Collection }, '404': { description: Missing } }
+    patch:
+      security: [{ bearerAuth: [] }]
+      summary: Update creator-owned draft
+      responses: { '200': { description: Updated }, '403': { description: Not owner } }
+  /storage/artwork:
+    post:
+      security: [{ bearerAuth: [] }]
+      summary: Upload creator-owned collection artwork to IPFS
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [collectionId, file]
+              properties:
+                collectionId: { type: string }
+                file: { type: array, items: { type: string, format: binary } }
+      responses: { '201': { description: Pinned artwork assets }, '403': { description: Not collection owner }, '415': { description: Unsupported media } }
+  /storage/metadata:
+    post:
+      security: [{ bearerAuth: [] }]
+      summary: Generate and pin collection metadata JSON
+      responses: { '201': { description: Pinned metadata records }, '403': { description: Not collection owner } }
+  /deployments/prepare:
+    post:
+      security: [{ bearerAuth: [] }]
+      summary: Simulate and return unsigned factory transaction
+      responses: { '200': { description: Unsigned transaction request } }
+  /deployments/record:
+    post:
+      security: [{ bearerAuth: [] }]
+      summary: Record creator-signed deployment transaction
+      responses: { '200': { description: Pending deployment } }
+  /mints/record:
+    post:
+      security: [{ bearerAuth: [] }]
+      summary: Record user-signed mint transaction for indexing
+      responses: { '201': { description: Pending mint } }
+  /dashboard/creator:
+    get:
+      security: [{ bearerAuth: [] }]
+      summary: Creator collections and aggregate metrics
+      responses: { '200': { description: Dashboard data } }

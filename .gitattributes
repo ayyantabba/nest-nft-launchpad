@@ -1,0 +1,8 @@
+*.glb binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.zip binary
+* text=auto eol=lf
+*.ps1 text eol=crlf

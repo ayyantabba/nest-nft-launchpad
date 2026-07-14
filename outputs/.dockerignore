@@ -1,0 +1,7 @@
+backend
+contracts
+config
+*.md
+*.zip
+nft_sculpture.glb
+.env
