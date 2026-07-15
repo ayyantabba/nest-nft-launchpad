@@ -22,9 +22,14 @@ const NETWORKS = {
 };
 
 const ACTIVE_NETWORK = NETWORKS.testnet;
+const WALLETCONNECT_PROJECT_ID = window.NEST_WALLETCONNECT_PROJECT_ID || "63564cf2fc58ce8b1059edd34ac041e0";
+const WALLETCONNECT_PROVIDER_URL = "https://esm.sh/@walletconnect/ethereum-provider@2.23.10?bundle";
 const DEFAULT_API_BASE = "https://nest-nft-launchpad-production.up.railway.app/v1";
 const API_BASE = window.NEST_API_URL || localStorage.getItem("nestApiUrl") || DEFAULT_API_BASE;
 const API_ORIGIN = API_BASE.replace(/\/v1\/?$/, "");
+let activeWalletProvider = null;
+let walletConnectProvider = null;
+const observedWalletProviders = new WeakSet();
 
 async function apiRequest(path, options = {}) {
   const token = state?.authToken || localStorage.getItem("nestAuthToken");
@@ -267,6 +272,8 @@ const integrationActivity = [
 let state = {
   route: location.hash.replace("#", "") || "/",
   wallet: "disconnected",
+  walletPickerOpen: false,
+  walletProviderName: "",
   readiness: "Not checked",
   deploymentState: "Awaiting wallet confirmation",
   mintState: "Connect wallet and read chain state before minting",
@@ -326,6 +333,27 @@ function nav(path, label) {
   return `<a class="${state.route === path ? "active" : ""}" href="#${path}">${label}</a>`;
 }
 
+function walletPicker() {
+  if (!state.walletPickerOpen) return "";
+  return `<div class="wallet-backdrop" onclick="closeWalletPicker()">
+    <section class="wallet-dialog" role="dialog" aria-modal="true" aria-labelledby="wallet-title" onclick="event.stopPropagation()">
+      <button class="wallet-close" type="button" aria-label="Close wallet selection" onclick="closeWalletPicker()">&times;</button>
+      <div class="kicker">Secure connection</div>
+      <h2 id="wallet-title">Choose a wallet</h2>
+      <p>Connect directly through a browser extension or open WalletConnect for mobile and desktop wallets.</p>
+      <div class="wallet-options">
+        <button type="button" class="wallet-option" onclick="connectWallet('injected')">
+          <strong>Browser wallet</strong><span>MetaMask, Phantom, Coinbase Wallet</span>
+        </button>
+        <button type="button" class="wallet-option" onclick="connectWallet('walletconnect')">
+          <strong>WalletConnect</strong><span>QR code and mobile deep links</span>
+        </button>
+      </div>
+      <p class="wallet-security">Nest only requests an address and a login signature. Private keys never leave your wallet.</p>
+    </section>
+  </div>`;
+}
+
 function shell(content) {
   return `
     <div class="shell">
@@ -342,7 +370,9 @@ function shell(content) {
         <div class="wallet">
           <span class="backend-status ${state.backend}">${state.backend === "online" ? "API connected" : state.backend === "offline" ? "Demo mode" : "Checking API"}</span>
           <span class="wallet-address">${state.walletAddress ? `${state.walletAddress.slice(0,6)}...${state.walletAddress.slice(-4)}` : "Wallet disconnected"}</span>
-          <button class="btn small primary" onclick="connectWallet()">${state.walletAddress ? "Wallet connected" : "Connect wallet"}</button>
+          ${state.walletAddress
+            ? `<button class="btn small" onclick="disconnectWallet()">Disconnect</button>`
+            : `<button class="btn small primary" onclick="openWalletPicker()">Connect wallet</button>`}
         </div>
       </header>
       ${content}
@@ -350,6 +380,7 @@ function shell(content) {
         <span>Nest is the permissionless NFT launchpad for Robinhood Chain.</span>
         <span>This is an independent application built on Robinhood Chain and is not affiliated with or endorsed by Robinhood Markets, Inc. Marketplace availability and royalty enforcement depend on third-party platforms.</span>
       </footer>
+      ${walletPicker()}
     </div>
   `;
 }
@@ -422,50 +453,7 @@ function processSection() {
 }
 
 function chainSection() {
-  return `<section class="section editorial-split"><div><div class="kicker">Robinhood Chain</div><h2>Creator-owned ERC-721 contracts on an EVM network.</h2><p>Deploy standard ERC-721 metadata contracts, pay gas in ETH, verify bytecode on the public explorer, and expose metadata for OpenSea indexing when marketplace support is available.</p></div><div class="technical-table"><div><span>Network</span><strong>${ACTIVE_NETWORK.name}</strong></div><div><span>Chain ID</span><strong>${ACTIVE_NETWORK.chainId}</strong></div><div><span>RPC</span><strong>${ACTIVE_NETWORK.rpcUrl}</strong></div><div><span>Explorer</span><strong>${ACTIVE_NETWORK.explorer}</strong></div><div><span>Standard</span><strong>ERC-721 + ERC-2981 signaling</strong></div></div></section>`;
-}
-
-function economicsSection() {
-  return `<section class="section economics" data-counter-section><div><div class="kicker">Creator economics</div><h2>Primary revenue is accounted onchain.</h2><p>The 5% Nest fee applies to primary mint revenue. Gas is paid separately by the transaction initiator. ERC-2981 royalties are signaled onchain, but secondary marketplaces may choose whether to enforce royalties.</p></div><div class="split-diagram"><div><strong><span class="count-number" data-count-to="95">0</span>%</strong><span>Creator</span></div><div><strong><span class="count-number" data-count-to="5">0</span>%</strong><span>Nest</span></div></div></section>`;
-}
-
-function explorePreviewSection() {
-  return `<section class="section"><div class="section-head"><div><div class="kicker">Explore collections</div><h2>Robinhood collections trading on OpenSea.</h2></div><p>Floor and one-day movement are seeded from the visible OpenSea ranking list. Live floor, volume, listing, and activity sync belongs in the server OpenSea adapter.</p></div>${openseaCollections.length ? `<div class="grid gallery-grid">${openseaCollections.map(card).join("")}</div>` : openseaEmptyState("OpenSea discovery is waiting for indexed data", "No real Robinhood Chain NFT collection records were found publicly, s…2384 tokens truncated…ap(([setting,status,docs])=>`<tr><td>${setting}</td><td>${status}</td><td>${docs}</td></tr>`).join("")}</table><button class="btn primary" onclick="runReadiness()">Run readiness check</button><button class="btn ghost" onclick="addNetwork()">Add Robinhood Chain</button><button class="btn ghost" onclick="switchNetwork()">Switch Network</button></div><div class="panel"><h3>Transaction states</h3>${txStates()}<p class="warning">Smart-contract deployment is permanent. Review supply, mint price, payout wallet, metadata, ownership, and Nest fee before confirming.</p><button class="btn primary" onclick="showDeployBlocked()">Prepare wallet transaction</button><p>${state.deploymentState}</p></div></div>`, false);
-}
-
-function txStates() {
-  return `<ol class="state-list">${["Awaiting wallet confirmation","Transaction submitted","Pending confirmation","Contract created","Waiting for indexer","Metadata verified","OpenSea discovery pending","Launch complete","Failed","Replaced","Dropped"].map(s=>`<li>${s}</li>`).join("")}</ol>`;
-}
-
-function mintPage() {
-  const featured = platformCollections[0];
-  return shell(`<main class="page"><section class="section-head"><div><div class="kicker">Nest mint desk</div><h2>Mint collections deployed on Nest.</h2></div><p>Only Nest-created collections appear in this section. OpenSea collections stay in Explore as external marketplace discovery.</p></section><section class="mint-layout"><div><div class="drop-art" style="${artStyle(featured.art)}"></div><div class="section grid gallery-grid">${platformCollections.map(platformCard).join("")}</div></div>${mintModule(featured)}</section></main>`);
-}
-
-function mintCollectionPage(id) {
-  const c = platformCollections.find((item) => item.id.toLowerCase() === id.toLowerCase()) || platformCollections[0];
-  return shell(`<main class="page mint-layout"><section><div class="drop-art" style="${artStyle(c.art)}"></div><div class="section grid cols-3">${[0,1,2,3,4,5].map(i=>`<div class="nft-art thumb-large" style="${artStyle(c.art + i)}"></div>`).join("")}</div></section>${mintModule(c)}</main>`);
-}
-
-function platformCard(c) {
-  const price = c.price === "Free" ? "Free" : `${c.price} ETH`;
-  const progress = Math.round(c.minted / c.supply * 100);
-  return `<article class="card market-card"><a href="#/mint/${c.id}"><div class="nft-art" style="${artStyle(c.art)}"></div></a><div class="card-body"><span class="state-label">${c.status}</span><h3>${c.name}</h3><p>${c.creator}</p><div class="progress"><span style="width:${progress}%"></span></div><div class="card-metrics"><div><span>Minted</span><strong>${c.minted}/${c.supply}</strong></div><div><span>Price</span><strong>${price}</strong></div></div><a class="market-link" href="#/mint/${c.id}">Mint collection</a></div></article>`;
-}
-
-function mintModule(c) {
-  const price = c.price === "Free" ? "Free" : `${c.price} ETH`;
-  const progress = Math.round(c.minted / c.supply * 100);
-  return `<aside class="panel mint-module"><span class="state-label">${c.status}</span><h1>${c.name}</h1><p>${c.description}</p>${deployRow("Creator", `${c.creator} / ${c.creatorAddress}`)}${deployRow("Network", ACTIVE_NETWORK.name)}${deployRow("Contract", `<a href="${explorerAddress(c.contractAddress)}" target="_blank" rel="noopener noreferrer">${c.contractAddress}</a>`)}${deployRow("Mint price", price)}${deployRow("Supply", `${c.minted}/${c.supply}`)}${deployRow("Max per wallet", c.maxWallet)}${deployRow("Time left", c.endsIn)}<div class="progress"><span style="width:${progress}%"></span></div><div class="field"><label>Quantity</label><input type="number" min="1" max="${c.maxWallet}" value="1"></div><button class="btn primary block" onclick="showMintBlocked()">Mint NFT</button><p id="mintStatus">${state.mintState}</p><div class="divider"></div><h3>Primary revenue split</h3><p>Creator receives 95%. Nest receives 5% from primary mint revenue. Gas is paid separately by the buyer.</p><h3>Recent mint activity</h3>${platformActivity(c)}</aside>`;
-}
-
-function platformActivity(c) {
-  return [
-    ["Mint", `${c.name} #${Math.max(c.minted - 2, 1)} minted`, "2m ago"],
-    ["Mint", `${c.name} #${Math.max(c.minted - 1, 1)} minted`, "7m ago"],
-    ["Contract", "Primary split enforced", "Factory v1"],
-    ["Metadata", c.metadataCid, "IPFS"]
-  ].map((a,i)=>`<div class="activity-item"><div class="thumb" style="${artStyle(c.art + i)}"></div><div><strong>${a[1]}</strong><div>${a[0]}</div></div><span>${a[2]}</span></div>`).join("");
+  return `<section class="section editorial-split"><div><div class="kicker">Robinhood Chain</div><h2>Creator-owned ERC-721 contracts on an EVM network.</h2><p>Deploy standard ERC-721 metadata contracts, pay gas in ETH, verify bytecode on the public explorer, and expose metadata for OpenSea indexing when marketplace support is available.</p></div><div clas…3913 tokens truncated…div></div><span>${a[2]}</span></div>`).join("");
 }
 
 function collectionPage(address) {
@@ -554,31 +542,116 @@ function weiToEth(value) {
   return fraction ? `${whole}.${fraction}` : whole;
 }
 
-async function connectWallet() {
-  state.notice = "";
-  if (!window.ethereum) {
-    state.notice = "No EVM wallet detected. Install a compatible wallet to sign in.";
+function openWalletPicker() { state.walletPickerOpen = true; render(); }
+function closeWalletPicker() { state.walletPickerOpen = false; render(); }
+
+function resetWalletSession(message = "Wallet disconnected.") {
+  state.wallet = "disconnected";
+  state.walletAddress = "";
+  state.walletProviderName = "";
+  state.authToken = "";
+  localStorage.removeItem("nestWalletAddress");
+  localStorage.removeItem("nestAuthToken");
+  state.notice = message;
+}
+
+function observeWalletProvider(provider) {
+  if (!provider?.on || observedWalletProviders.has(provider)) return;
+  observedWalletProviders.add(provider);
+  provider.on("accountsChanged", (accounts) => {
+    const walletAddress = accounts?.[0] || "";
+    state.walletAddress = walletAddress;
+    state.authToken = "";
+    localStorage.removeItem("nestAuthToken");
+    if (walletAddress) localStorage.setItem("nestWalletAddress", walletAddress);
+    else localStorage.removeItem("nestWalletAddress");
+    state.notice = walletAddress ? "Wallet account changed. Sign in again to continue." : "Wallet disconnected.";
     render();
+  });
+  provider.on("disconnect", () => { resetWalletSession(); render(); });
+  provider.on("chainChanged", () => render());
+}
+
+async function getWalletConnectProvider() {
+  if (walletConnectProvider) return walletConnectProvider;
+  const walletConnectModule = await import(WALLETCONNECT_PROVIDER_URL);
+  const EthereumProvider = walletConnectModule.default || walletConnectModule.EthereumProvider;
+  if (!EthereumProvider?.init) throw new Error("WalletConnect could not be initialized.");
+  walletConnectProvider = await EthereumProvider.init({
+    projectId: WALLETCONNECT_PROJECT_ID,
+    chains: [NETWORKS.testnet.chainId],
+    optionalChains: [NETWORKS.mainnet.chainId],
+    showQrModal: true,
+    rpcMap: {
+      [NETWORKS.testnet.chainId]: NETWORKS.testnet.rpcUrl,
+      [NETWORKS.mainnet.chainId]: NETWORKS.mainnet.rpcUrl
+    },
+    methods: ["eth_sendTransaction", "personal_sign", "eth_signTypedData_v4", "wallet_switchEthereumChain", "wallet_addEthereumChain"],
+    events: ["accountsChanged", "chainChanged", "disconnect"],
+    metadata: {
+      name: "Nest",
+      description: "NFT launch infrastructure for Robinhood Chain",
+      url: location.origin,
+      icons: []
+    }
+  });
+  observeWalletProvider(walletConnectProvider);
+  return walletConnectProvider;
+}
+
+async function authenticateWallet(provider, walletAddress) {
+  if (state.backend !== "online") {
+    state.notice = "Wallet connected. Backend is offline, so launch drafts remain local for now.";
     return;
   }
+  const challenge = await apiRequest("/auth/nonce", { method: "POST", body: JSON.stringify({ walletAddress }) });
+  const signature = await provider.request({ method: "personal_sign", params: [challenge.message, walletAddress] });
+  const verified = await apiRequest("/auth/verify", { method: "POST", body: JSON.stringify({ sessionId: challenge.sessionId, message: challenge.message, signature }) });
+  state.authToken = verified.token;
+  localStorage.setItem("nestAuthToken", verified.token);
+  state.notice = "Wallet connected and authenticated with Nest.";
+}
+
+async function connectWallet(mode = "injected") {
+  state.walletPickerOpen = false;
+  state.notice = mode === "walletconnect" ? "Opening WalletConnect..." : "Opening browser wallet...";
+  render();
   try {
-    const [walletAddress] = await window.ethereum.request({ method: "eth_requestAccounts" });
+    let provider;
+    let accounts;
+    if (mode === "walletconnect") {
+      provider = await getWalletConnectProvider();
+      await provider.connect();
+      accounts = provider.accounts?.length ? provider.accounts : await provider.request({ method: "eth_accounts" });
+      state.walletProviderName = "WalletConnect";
+    } else {
+      if (!window.ethereum) throw new Error("No browser wallet detected. Use WalletConnect or install a compatible wallet.");
+      provider = window.ethereum;
+      observeWalletProvider(provider);
+      accounts = await provider.request({ method: "eth_requestAccounts" });
+      state.walletProviderName = "Browser wallet";
+    }
+    const walletAddress = accounts?.[0];
+    if (!walletAddress) throw new Error("The wallet did not return an account.");
+    activeWalletProvider = provider;
     state.wallet = "connected";
     state.walletAddress = walletAddress;
     localStorage.setItem("nestWalletAddress", walletAddress);
-    if (state.backend === "online") {
-      const challenge = await apiRequest("/auth/nonce", { method: "POST", body: JSON.stringify({ walletAddress }) });
-      const signature = await window.ethereum.request({ method: "personal_sign", params: [challenge.message, walletAddress] });
-      const verified = await apiRequest("/auth/verify", { method: "POST", body: JSON.stringify({ sessionId: challenge.sessionId, message: challenge.message, signature }) });
-      state.authToken = verified.token;
-      localStorage.setItem("nestAuthToken", verified.token);
-      state.notice = "Wallet connected and authenticated with Nest.";
-    } else {
-      state.notice = "Wallet connected. Backend is offline, so launch drafts remain local for now.";
-    }
+    await authenticateWallet(provider, walletAddress);
   } catch (error) {
     state.notice = `Wallet connection failed: ${error.message}`;
   }
+  render();
+}
+
+async function disconnectWallet() {
+  try {
+    if (activeWalletProvider === walletConnectProvider && walletConnectProvider?.disconnect) {
+      await walletConnectProvider.disconnect();
+    }
+  } catch {}
+  activeWalletProvider = null;
+  resetWalletSession();
   render();
 }
 
@@ -649,8 +722,33 @@ async function uploadArtwork(files) {
   render();
 }
 function runReadiness() { state.readiness = "Requires live Wagmi/Viem check"; render(); }
-function addNetwork() { state.deploymentState = "Use wallet_addEthereumChain with centralized Robinhood Chain config."; render(); }
-function switchNetwork() { state.deploymentState = "Use wallet_switchEthereumChain and validate chainId before deployment."; render(); }
+async function addNetwork() {
+  try {
+    if (!activeWalletProvider) throw new Error("Connect a wallet first.");
+    await activeWalletProvider.request({ method: "wallet_addEthereumChain", params: [{
+      chainId: `0x${ACTIVE_NETWORK.chainId.toString(16)}`,
+      chainName: ACTIVE_NETWORK.name,
+      nativeCurrency: { name: ACTIVE_NETWORK.currency, symbol: ACTIVE_NETWORK.currency, decimals: 18 },
+      rpcUrls: [ACTIVE_NETWORK.rpcUrl],
+      blockExplorerUrls: [ACTIVE_NETWORK.explorer]
+    }] });
+    state.deploymentState = `${ACTIVE_NETWORK.name} added to the connected wallet.`;
+  } catch (error) {
+    state.deploymentState = `Network setup failed: ${error.message}`;
+  }
+  render();
+}
+async function switchNetwork() {
+  try {
+    if (!activeWalletProvider) throw new Error("Connect a wallet first.");
+    await activeWalletProvider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: `0x${ACTIVE_NETWORK.chainId.toString(16)}` }] });
+    state.deploymentState = `Connected to ${ACTIVE_NETWORK.name}.`;
+  } catch (error) {
+    if (error.code === 4902 || error.message?.includes("Unrecognized chain")) return addNetwork();
+    state.deploymentState = `Network switch failed: ${error.message}`;
+    render();
+  }
+}
 function showDeployBlocked() { state.deploymentState = "No transaction sent in this static preview. Wire Wagmi + Viem simulation before enabling deployment."; render(); }
 function showMintBlocked() { state.mintState = "No mint transaction sent in this static preview. Read contract state and simulate mint before enabling."; render(); }
 function tiltModel(event) {
