@@ -65,6 +65,7 @@ model Collection {
   maxSupply           Int
   mintedSupply        Int              @default(0)
   maxPerWallet        Int
+  maxPerTransaction   Int              @default(0)
   royaltyBps          Int
   nestFeeBps          Int              @default(500)
   creatorPayoutWallet String
@@ -85,6 +86,7 @@ model Collection {
   metadataItems       MetadataItem[]
   deployments         Deployment[]
   mints               Mint[]
+  tokenOwnerships     TokenOwnership[]
   referrals           Referral[]
 
   @@index([status, createdAt])
@@ -149,11 +151,28 @@ model Mint {
   creatorAmountWei  String
   nestFeeAmountWei  String
   status            MintStatus @default(PENDING)
+  tokenIds          Json?
+  blockNumber       BigInt?
+  confirmedAt       DateTime?
   createdAt         DateTime   @default(now())
   collection        Collection @relation(fields: [collectionId], references: [id])
 
   @@index([collectionId, createdAt])
   @@unique([txHash])
+}
+
+model TokenOwnership {
+  id           String     @id @default(cuid())
+  collectionId String
+  tokenId      Int
+  ownerWallet  String
+  mintTxHash   String
+  acquiredAt   DateTime   @default(now())
+  collection   Collection @relation(fields: [collectionId], references: [id])
+
+  @@unique([collectionId, tokenId])
+  @@index([ownerWallet, acquiredAt])
+  @@index([collectionId, tokenId])
 }
 
 model IndexerEvent {
