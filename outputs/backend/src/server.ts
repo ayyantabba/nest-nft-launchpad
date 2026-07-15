@@ -43,6 +43,22 @@ app.get("/health", async () => {
   return { status: "ok", service: "nest-api", environment: env.NODE_ENV };
 });
 
+app.get("/health/storage", async (_request, reply) => {
+  if (env.IPFS_PROVIDER !== "pinata" || !env.PINATA_JWT) {
+    return reply.code(503).send({ status: "not_configured", provider: env.IPFS_PROVIDER });
+  }
+
+  const response = await fetch("https://api.pinata.cloud/data/testAuthentication", {
+    headers: { authorization: `Bearer ${env.PINATA_JWT}` }
+  });
+  if (!response.ok) {
+    app.log.warn({ statusCode: response.status }, "Pinata authentication check failed");
+    return reply.code(503).send({ status: "authentication_failed", provider: "pinata" });
+  }
+
+  return { status: "ok", provider: "pinata", uploads: ["file", "json"] };
+});
+
 app.post("/v1/auth/nonce", async (request) => {
   const body = z.object({ walletAddress: address }).parse(request.body);
   const nonce = randomBytes(24).toString("hex");
