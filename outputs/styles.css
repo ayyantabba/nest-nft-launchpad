@@ -85,6 +85,17 @@ img, model-viewer { max-width: 100%; }
 .nav a:hover::after, .nav a.active::after { right: 0; }
 .wallet { display: flex; align-items: center; gap: 12px; }
 .wallet-address { color: var(--text-2); font: 12px/1.2 "SFMono-Regular", Consolas, monospace; }
+.wallet-backdrop { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 20px; background: rgba(10,12,11,.52); backdrop-filter: blur(10px); }
+.wallet-dialog { position: relative; width: min(100%, 500px); padding: 34px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); box-shadow: 0 24px 70px rgba(31,35,28,.2); }
+.wallet-dialog h2 { margin: 8px 0 12px; font-size: 38px; }
+.wallet-dialog > p { color: var(--text-2); }
+.wallet-close { position: absolute; top: 14px; right: 14px; width: 34px; height: 34px; border: 0; background: transparent; color: var(--text); font-size: 25px; cursor: pointer; }
+.wallet-options { display: grid; gap: 10px; margin-top: 24px; }
+.wallet-option { display: grid; gap: 4px; width: 100%; padding: 18px; border: 1px solid var(--border); border-radius: 7px; background: #fff; color: var(--text); text-align: left; cursor: pointer; transition: border-color .2s ease, transform .2s ease; }
+.wallet-option:hover { border-color: var(--dark); transform: translateY(-1px); }
+.wallet-option strong { font-size: 15px; }
+.wallet-option span, .wallet-security { color: var(--muted); font-size: 12px; }
+.wallet-security { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
 
 .page { width: min(100%, var(--container)); margin: 0 auto; padding: 42px 24px 104px; position: relative; }
 .hero {
@@ -355,6 +366,8 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--lime-strong); o
   body { background-size: 48px 48px; }
   .topbar { padding-inline: 15px; }
   .wallet-address, .backend-status { display: none; }
+  .wallet-dialog { padding: 28px 20px 22px; }
+  .wallet-dialog h2 { font-size: 34px; }
   .page { padding: 26px 15px 72px; }
   .hero { padding-top: 42px; gap: 14px; }
   h1 { font-size: clamp(45px, 14vw, 64px); }
@@ -380,3 +393,4 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--lime-strong); o
   .footer { grid-template-columns: 1fr; padding-inline: 15px; }
   .market-detail-identity { grid-template-columns: 1fr; }
 }
+
