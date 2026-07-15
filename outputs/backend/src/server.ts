@@ -43,6 +43,22 @@ app.get("/health", async () => {
   return { status: "ok", service: "nest-api", environment: env.NODE_ENV };
 });
 
+app.get("/health/storage", async (_request, reply) => {
+  if (env.IPFS_PROVIDER !== "pinata" || !env.PINATA_JWT) {
+    return reply.code(503).send({ status: "not_configured", provider: env.IPFS_PROVIDER });
+  }
+
+  const response = await fetch("https://api.pinata.cloud/data/testAuthentication", {
+    headers: { authorization: `Bearer ${env.PINATA_JWT}` }
+  });
+  if (!response.ok) {
+    app.log.warn({ statusCode: response.status }, "Pinata authentication check failed");
+    return reply.code(503).send({ status: "authentication_failed", provider: "pinata" });
+  }
+
+  return { status: "ok", provider: "pinata", uploads: ["file", "json"] };
+});
+
 app.post("/v1/auth/nonce", async (request) => {
   const body = z.object({ walletAddress: address }).parse(request.body);
   const nonce = randomBytes(24).toString("hex");
@@ -83,10 +99,18 @@ app.post("/v1/collections", { preHandler: [app.authenticate] }, async (request, 
 });
 
 app.get("/v1/collections", async (request) => {
-  const query = z.object({ status: z.string().optional(), creator: z.string().optional(), take: z.coerce.number().min(1).max(100).default(24), cursor: z.string().optional() }).parse(request.query);
+  const query = z.object({ status: z.enum(["UPCOMING", "LIVE", "ENDED"]).default("LIVE"), creator: z.string().optional(), take: z.coerce.number().min(1).max(100).default(24), cursor: z.string().optional() }).parse(request.query);
+  const status = query.status === "UPCOMING"
+    ? { in: ["STORAGE_READY", "READY_TO_DEPLOY", "DEPLOYING", "LIVE"] }
+    : query.status;
   const rows = await db.collection.findMany({
-    where: { status: query.status as never, creatorWallet: query.creator }, take: query.take + 1,
-    ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}), orderBy: { createdAt: "desc" }, include: { deployments: { take: 1, orderBy: { createdAt: "desc" } } }
+    where: { status: status as never, creatorWallet: query.creator }, take: query.take + 1,
+    ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}), orderBy: { createdAt: "desc" },
+    include: {
+      assets: { where: { status: "PINNED" }, take: 1, orderBy: { createdAt: "asc" } },
+      metadataItems: { take: 1, orderBy: { tokenId: "asc" } },
+      deployments: { take: 1, orderBy: { createdAt: "desc" } }
+    }
   });
   return { items: rows.slice(0, query.take), nextCursor: rows.length > query.take ? rows[query.take]?.id : null };
 });

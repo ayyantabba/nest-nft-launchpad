@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {RobinhoodNFTCollection} from "./RobinhoodNFTCollection.sol";
 

@@ -6,7 +6,7 @@ const NETWORKS = {
     currency: "ETH",
     rpcUrl: "https://rpc.testnet.chain.robinhood.com",
     explorer: "https://explorer.testnet.chain.robinhood.com",
-    faucet: "Configure testnet faucet URL in config/environment.ts",
+    faucet: "https://faucet.testnet.chain.robinhood.com/",
     openseaState: "OpenSea indexing pending"
   },
   mainnet: {
@@ -21,12 +21,25 @@ const NETWORKS = {
   }
 };
 
-const ACTIVE_NETWORK = NETWORKS.testnet;
-const DEFAULT_API_BASE = ["127.0.0.1", "localhost"].includes(location.hostname)
-  ? "http://127.0.0.1:8787/v1"
-  : `${location.origin}/api/v1`;
+const RUNTIME_CONFIG = window.NEST_RUNTIME_CONFIG || {};
+const REQUESTED_NETWORK = RUNTIME_CONFIG.network === "mainnet" ? "mainnet" : "testnet";
+const MAINNET_DEPLOYMENT_CONFIRMED = RUNTIME_CONFIG.confirmMainnetDeployment === true;
+const ACTIVE_NETWORK_KEY = REQUESTED_NETWORK === "mainnet" && MAINNET_DEPLOYMENT_CONFIRMED ? "mainnet" : "testnet";
+const ACTIVE_NETWORK = NETWORKS[ACTIVE_NETWORK_KEY];
+const SECONDARY_NETWORK = NETWORKS[ACTIVE_NETWORK_KEY === "mainnet" ? "testnet" : "mainnet"];
+const ACTIVE_FACTORY_STORAGE_KEY = ACTIVE_NETWORK_KEY === "mainnet" ? "nestFactoryMainnetAddress" : "nestFactoryTestnetAddress";
+const ACTIVE_FACTORY_VERSION = ACTIVE_NETWORK_KEY === "mainnet" ? "1.0.0" : "1.0.0-testnet";
+const WALLETCONNECT_PROJECT_ID = window.NEST_WALLETCONNECT_PROJECT_ID || "63564cf2fc58ce8b1059edd34ac041e0";
+const WALLETCONNECT_PROVIDER_URL = "https://esm.sh/@walletconnect/ethereum-provider@2.23.10?bundle";
+const VIEM_PROVIDER_URL = "https://esm.sh/viem@2.31.7?bundle";
+const PLATFORM_TREASURY = "0xaB81d488395EdebC6632c7546d223439bD8FBdD1";
+const FACTORY_ARTIFACT_URL = "./assets/contracts/RobinhoodNFTFactory.json";
+const DEFAULT_API_BASE = "https://nest-nft-launchpad-production.up.railway.app/v1";
 const API_BASE = window.NEST_API_URL || localStorage.getItem("nestApiUrl") || DEFAULT_API_BASE;
 const API_ORIGIN = API_BASE.replace(/\/v1\/?$/, "");
+let activeWalletProvider = null;
+let walletConnectProvider = null;
+const observedWalletProviders = new WeakSet();
 
 async function apiRequest(path, options = {}) {
   const token = state?.authToken || localStorage.getItem("nestAuthToken");
@@ -205,59 +218,7 @@ const OPENSEA_SOURCE = {
   note: "OpenSea data requires an API key and a supported-chain slug before collection, listing, floor, and activity data can be shown."
 };
 
-let platformCollections = [
-  {
-    id: "market-hours",
-    contractAddress: "0x7b2d00000000000000000000000000000000a101",
-    name: "Market Hours",
-    creator: "Haven Studio",
-    creatorAddress: "0xA19f23db9042c36Bf8e2E9353b90a1Ce82D2B8E2",
-    description: "A Nest-launched Robinhood Chain collection for onchain art collectors.",
-    minted: 74,
-    supply: 250,
-    price: "0.018",
-    maxWallet: 3,
-    status: "Live mint",
-    endsIn: "18h 24m",
-    deployedAt: "Nest deployment",
-    metadataCid: "ipfs://bafy-platform-market-hours",
-    art: 0
-  },
-  {
-    id: "lime-ledger-studies",
-    contractAddress: "0x7b2d00000000000000000000000000000000b202",
-    name: "Lime Ledger Studies",
-    creator: "Archive Desk",
-    creatorAddress: "0x7a31B6f2C1E62F2dAC908c6E4468dC7a8E2D9F02",
-    description: "A clean edition drop deployed through the Nest contract factory.",
-    minted: 12,
-    supply: 100,
-    price: "0.01",
-    maxWallet: 2,
-    status: "Allowlist opening",
-    endsIn: "2d 04h",
-    deployedAt: "Nest deployment",
-    metadataCid: "ipfs://bafy-platform-ledger",
-    art: 1
-  },
-  {
-    id: "settlement-objects",
-    contractAddress: "0x7b2d00000000000000000000000000000000c303",
-    name: "Settlement Objects",
-    creator: "North Terminal",
-    creatorAddress: "0x43dE1F51642A26391dA6712e8b98a13b61EFf421",
-    description: "A nearly complete public mint with primary revenue split enforced in contract.",
-    minted: 195,
-    supply: 200,
-    price: "Free",
-    maxWallet: 1,
-    status: "Nearly minted out",
-    endsIn: "06h 10m",
-    deployedAt: "Nest deployment",
-    metadataCid: "ipfs://bafy-platform-settlement",
-    art: 2
-  }
-];
+let platformCollections = [];
 
 const integrationActivity = [
   ["Indexer", "CollectionCreated event queued", "Waiting for real RPC polling"],
@@ -269,16 +230,24 @@ const integrationActivity = [
 let state = {
   route: location.hash.replace("#", "") || "/",
   wallet: "disconnected",
+  walletPickerOpen: false,
+  walletProviderName: "",
   readiness: "Not checked",
   deploymentState: "Awaiting wallet confirmation",
   mintState: "Connect wallet and read chain state before minting",
   launchStep: 1,
   backend: "checking",
   backendMessage: "Connecting to Nest API",
+  factoryDeployment: {
+    status: "Not deployed",
+    txHash: "",
+    contractAddress: localStorage.getItem(ACTIVE_FACTORY_STORAGE_KEY) || ""
+  },
   authToken: localStorage.getItem("nestAuthToken") || "",
   walletAddress: localStorage.getItem("nestWalletAddress") || "",
   collectionId: localStorage.getItem("nestDraftCollectionId") || "",
   notice: "",
+  artworkAssets: [],
   launch: {
     name: "Market Hours",
     symbol: "MRKT",
@@ -303,11 +272,25 @@ window.addEventListener("hashchange", () => {
   render();
 });
 
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
+}
+
 function artStyle(index, prop = "--art") {
   return `${prop}: ${ARTWORK[index % ARTWORK.length]}`;
 }
 
 function collectionArtStyle(collection, prop = "--art") {
+  if (collection.image) return `${prop}: url('${collection.image}')`;
+  return artStyle(collection.art || 0, prop);
+}
+
+function ipfsUrl(uri) {
+  if (!uri) return "";
+  return uri.startsWith("ipfs://") ? `https://ipfs.io/ipfs/${uri.slice(7)}` : uri;
+}
+
+function platformArtStyle(collection, prop = "--art") {
   if (collection.image) return `${prop}: url('${collection.image}')`;
   return artStyle(collection.art || 0, prop);
 }
@@ -328,11 +311,32 @@ function nav(path, label) {
   return `<a class="${state.route === path ? "active" : ""}" href="#${path}">${label}</a>`;
 }
 
+function walletPicker() {
+  if (!state.walletPickerOpen) return "";
+  return `<div class="wallet-backdrop" onclick="closeWalletPicker()">
+    <section class="wallet-dialog" role="dialog" aria-modal="true" aria-labelledby="wallet-title" onclick="event.stopPropagation()">
+      <button class="wallet-close" type="button" aria-label="Close wallet selection" onclick="closeWalletPicker()">&times;</button>
+      <div class="kicker">Secure connection</div>
+      <h2 id="wallet-title">Choose a wallet</h2>
+      <p>Connect directly through a browser extension or open WalletConnect for mobile and desktop wallets.</p>
+      <div class="wallet-options">
+        <button type="button" class="wallet-option" onclick="connectWallet('injected')">
+          <strong>Browser wallet</strong><span>MetaMask, Phantom, Coinbase Wallet</span>
+        </button>
+        <button type="button" class="wallet-option" onclick="connectWallet('walletconnect')">
+          <strong>WalletConnect</strong><span>QR code and mobile deep links</span>
+        </button>
+      </div>
+      <p class="wallet-security">Nest only requests an address and a login signature. Private keys never leave your wallet.</p>
+    </section>
+  </div>`;
+}
+
 function shell(content) {
   return `
     <div class="shell">
       <header class="topbar">
-        <a class="brand" href="#/"><span class="mark">N</span><span>Nest</span></a>
+        <a class="brand" href="#/" aria-label="Nest home">nest</a>
         <nav class="nav">
           ${nav("/", "Home")}
           ${nav("/launch", "Create")}
@@ -344,7 +348,9 @@ function shell(content) {
         <div class="wallet">
           <span class="backend-status ${state.backend}">${state.backend === "online" ? "API connected" : state.backend === "offline" ? "Demo mode" : "Checking API"}</span>
           <span class="wallet-address">${state.walletAddress ? `${state.walletAddress.slice(0,6)}...${state.walletAddress.slice(-4)}` : "Wallet disconnected"}</span>
-          <button class="btn small primary" onclick="connectWallet()">${state.walletAddress ? "Wallet connected" : "Connect wallet"}</button>
+          ${state.walletAddress
+            ? `<button class="btn small" onclick="disconnectWallet()">Disconnect</button>`
+            : `<button class="btn small primary" onclick="openWalletPicker()">Connect wallet</button>`}
         </div>
       </header>
       ${content}
@@ -352,6 +358,7 @@ function shell(content) {
         <span>Nest is the permissionless NFT launchpad for Robinhood Chain.</span>
         <span>This is an independent application built on Robinhood Chain and is not affiliated with or endorsed by Robinhood Markets, Inc. Marketplace availability and royalty enforcement depend on third-party platforms.</span>
       </footer>
+      ${walletPicker()}
     </div>
   `;
 }
@@ -376,6 +383,7 @@ function homePage() {
           <div class="model-fallback"></div>
           <model-viewer id="heroModel" src="./cyberpunk_card.glb" camera-controls auto-rotate auto-rotate-delay="0" rotation-per-second="8deg" shadow-intensity=".34" exposure="1.04" environment-image="neutral" camera-orbit="18deg 70deg 112%" min-camera-orbit="auto auto 76%" max-camera-orbit="auto auto 136%" reveal="auto" loading="eager" alt="Floating cyberpunk NFT card"></model-viewer>
           <div class="model-loading">Loading 3D card</div>
+          <p class="model-credit">3D model by <a href="https://sketchfab.com/rodrigobento" target="_blank" rel="noopener noreferrer">Rodrigo Bento</a>. Owner royalties apply.</p>
         </div>
       </section>
       ${tickerSection()}
@@ -394,13 +402,21 @@ function tickerSection() {
 }
 
 function liveMintsSection() {
-  return `<section class="section"><div class="section-head"><div><div class="kicker">Live Nest mints</div><h2>Collections deployed through Nest.</h2></div><p>These drops represent collections created on Nest. Buyers can open each mint page, select quantity, connect wallet, and mint once live contract calls are wired.</p></div><div class="mint-list">${platformCollections.map(platformRow).join("")}</div></section>`;
+  return `<section class="section"><div class="section-head"><div><div class="kicker">Upcoming Nest mints</div><h2>Real launches from the Nest database.</h2></div><p>Only collections prepared or deployed through Nest appear here. Mint availability follows database and onchain deployment status.</p></div>${platformCollections.length ? `<div class="mint-list">${platformCollections.map(platformRow).join("")}</div>` : platformEmptyState()}</section>`;
+}
+
+function platformEmptyState() {
+  const copy = state.backend === "online"
+    ? "No creator has published an upcoming or live Nest mint yet. The first database-backed launch will appear here automatically."
+    : "Nest could not reach the collection database. Upcoming mints will return automatically when the API reconnects.";
+  return `<article class="panel opensea-empty"><div><span class="state-label">Database-backed mints</span><h3>No upcoming mints available</h3><p>${copy}</p></div><div class="actions"><a class="btn primary" href="#/launch">Launch a collection</a><button class="btn ghost" type="button" onclick="checkBackend()">Refresh mints</button></div></article>`;
 }
 
 function platformRow(c) {
   const price = c.price === "Free" ? "Free" : `${c.price} ETH`;
   const progress = Math.round(c.minted / c.supply * 100);
-  return `<article class="collection-row"><a class="row-art" style="${artStyle(c.art || 0)}" href="#/mint/${c.id}"></a><div><span class="state-label">${c.status}</span><h3>${c.name}</h3><p>${c.description}</p><div class="row-meta"><span>${c.creator}</span><span>${price}</span><span>${c.minted}/${c.supply} minted</span><span>${c.endsIn} left</span></div><div class="progress"><span style="width:${progress}%"></span></div></div><div class="row-links"><a href="#/mint/${c.id}">Open mint page</a><a href="${explorerAddress(c.contractAddress)}" target="_blank" rel="noopener noreferrer">View contract</a></div></article>`;
+  const contractLink = c.contractAddress ? `<a href="${explorerAddress(c.contractAddress)}" target="_blank" rel="noopener noreferrer">View contract</a>` : `<span>Contract pending</span>`;
+  return `<article class="collection-row"><a class="row-art" style="${platformArtStyle(c)}" href="#/mint/${c.id}"></a><div><span class="state-label">${c.status}</span><h3>${c.name}</h3><p>${c.description}</p><div class="row-meta"><span>${c.creator}</span><span>${price}</span><span>${c.minted}/${c.supply} minted</span><span>${c.endsIn}</span></div><div class="progress"><span style="width:${progress}%"></span></div></div><div class="row-links"><a href="#/mint/${c.id}">Open mint page</a>${contractLink}</div></article>`;
 }
 
 function collectionRow(c) {
@@ -469,8 +485,13 @@ function stepIdentity() {
   return stepFrame("Step 01", "Collection identity", `<div class="panel form-grid">${field("Collection name","name")}${field("Symbol","symbol")}${field("Description","description","textarea","full")}${field("Creator display name","creatorName")}${field("Creator wallet","creatorWallet")}${field("Website","website")}${field("X account","x")}${field("Telegram or Discord","social")}<div class="field"><label>Collection avatar</label><input type="file" accept="image/png,image/jpeg,image/webp,image/gif"></div><div class="field"><label>Collection banner</label><input type="file" accept="image/png,image/jpeg,image/webp,image/gif"></div></div>`);
 }
 
+function artworkPreviewGrid() {
+  if (!state.artworkAssets.length) return `<div class="artwork-empty">Selected artwork previews will appear here.</div>`;
+  return `<div class="artwork-previews">${state.artworkAssets.map((asset) => `<article class="artwork-preview">${asset.kind === "image" ? `<img src="${asset.previewUrl}" alt="${escapeHtml(asset.name)}">` : asset.kind === "video" ? `<video src="${asset.previewUrl}" muted playsinline controls></video>` : `<div class="asset-file">3D</div>`}<div><strong>${escapeHtml(asset.name)}</strong><span>${asset.status}</span></div></article>`).join("")}</div>`;
+}
+
 function stepArtwork() {
-  return stepFrame("Step 02", "Artwork", `<div class="grid cols-2"><div class="panel upload-zone"><div><h3>Upload artwork</h3><p class="artist-rec"><a href="https://frontman-plays.xyz" target="_blank" rel="noopener noreferrer">Don’t have your artwork? Hire our top artist</a></p><p>Supports PNG, JPEG, WEBP, GIF, optional animation/video where compatible, and ZIP bulk upload. Production upload validates file type and size on both client and server.</p><input type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,model/gltf-binary" onchange="uploadArtwork(this.files)"></div></div><div class="panel"><h3>Edition types</h3><table class="table"><tr><th>Type</th><th>Status</th></tr><tr><td>Single edition</td><td>Ready</td></tr><tr><td>Open edition</td><td>Ready</td></tr><tr><td>Repeated artwork</td><td>Ready</td></tr><tr><td>Unique files</td><td>Ready</td></tr><tr><td>ZIP bulk upload</td><td>Backend connected</td></tr></table></div></div>`);
+  return stepFrame("Step 02", "Artwork", `<div class="grid cols-2"><div class="panel upload-zone"><div><h3>Upload artwork</h3><p class="artist-rec"><a href="https://frontman-plays.xyz" target="_blank" rel="noopener noreferrer">Don’t have your artwork? Hire our top artist</a></p><p>PNG, JPEG, WEBP, GIF, MP4 and GLB up to 25 MB each. Files preview instantly before IPFS upload.</p><label class="upload-control"><span>Choose artwork</span><input type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,model/gltf-binary,.glb" onchange="uploadArtwork(this.files)"></label>${artworkPreviewGrid()}</div></div><div class="panel"><h3>Edition types</h3><table class="table"><tr><th>Type</th><th>Status</th></tr><tr><td>Single edition</td><td>Ready</td></tr><tr><td>Open edition</td><td>Ready</td></tr><tr><td>Repeated artwork</td><td>Ready</td></tr><tr><td>Unique files</td><td>Ready</td></tr><tr><td>ZIP bulk upload</td><td>Backend connected</td></tr></table></div></div>`);
 }
 
 function stepMetadata() {
@@ -524,24 +545,27 @@ function txStates() {
 
 function mintPage() {
   const featured = platformCollections[0];
-  return shell(`<main class="page"><section class="section-head"><div><div class="kicker">Nest mint desk</div><h2>Mint collections deployed on Nest.</h2></div><p>Only Nest-created collections appear in this section. OpenSea collections stay in Explore as external marketplace discovery.</p></section><section class="mint-layout"><div><div class="drop-art" style="${artStyle(featured.art)}"></div><div class="section grid gallery-grid">${platformCollections.map(platformCard).join("")}</div></div>${mintModule(featured)}</section></main>`);
+  if (!featured) return shell(`<main class="page"><section class="section-head"><div><div class="kicker">Nest mint desk</div><h2>Upcoming and live mints.</h2></div><p>This page reads directly from the Nest collection database.</p></section><section class="section">${platformEmptyState()}</section></main>`);
+  return shell(`<main class="page"><section class="section-head"><div><div class="kicker">Nest mint desk</div><h2>Mint collections deployed on Nest.</h2></div><p>Only Nest-created collections appear in this section. OpenSea collections stay in Explore as external marketplace discovery.</p></section><section class="mint-layout"><div><div class="drop-art" style="${platformArtStyle(featured)}"></div><div class="section grid gallery-grid">${platformCollections.map(platformCard).join("")}</div></div>${mintModule(featured)}</section></main>`);
 }
 
 function mintCollectionPage(id) {
-  const c = platformCollections.find((item) => item.id.toLowerCase() === id.toLowerCase()) || platformCollections[0];
-  return shell(`<main class="page mint-layout"><section><div class="drop-art" style="${artStyle(c.art)}"></div><div class="section grid cols-3">${[0,1,2,3,4,5].map(i=>`<div class="nft-art thumb-large" style="${artStyle(c.art + i)}"></div>`).join("")}</div></section>${mintModule(c)}</main>`);
+  const c = platformCollections.find((item) => item.id.toLowerCase() === id.toLowerCase());
+  if (!c) return shell(`<main class="page"><section class="section">${platformEmptyState()}</section></main>`);
+  return shell(`<main class="page mint-layout"><section><div class="drop-art" style="${platformArtStyle(c)}"></div><div class="section grid cols-3">${[0,1,2,3,4,5].map(i=>`<div class="nft-art thumb-large" style="${c.image ? platformArtStyle(c) : artStyle(c.art + i)}"></div>`).join("")}</div></section>${mintModule(c)}</main>`);
 }
 
 function platformCard(c) {
   const price = c.price === "Free" ? "Free" : `${c.price} ETH`;
   const progress = Math.round(c.minted / c.supply * 100);
-  return `<article class="card market-card"><a href="#/mint/${c.id}"><div class="nft-art" style="${artStyle(c.art)}"></div></a><div class="card-body"><span class="state-label">${c.status}</span><h3>${c.name}</h3><p>${c.creator}</p><div class="progress"><span style="width:${progress}%"></span></div><div class="card-metrics"><div><span>Minted</span><strong>${c.minted}/${c.supply}</strong></div><div><span>Price</span><strong>${price}</strong></div></div><a class="market-link" href="#/mint/${c.id}">Mint collection</a></div></article>`;
+  return `<article class="card market-card"><a href="#/mint/${c.id}"><div class="nft-art" style="${platformArtStyle(c)}"></div></a><div class="card-body"><span class="state-label">${c.status}</span><h3>${c.name}</h3><p>${c.creator}</p><div class="progress"><span style="width:${progress}%"></span></div><div class="card-metrics"><div><span>Minted</span><strong>${c.minted}/${c.supply}</strong></div><div><span>Price</span><strong>${price}</strong></div></div><a class="market-link" href="#/mint/${c.id}">${c.canMint ? "Mint collection" : "View upcoming drop"}</a></div></article>`;
 }
 
 function mintModule(c) {
   const price = c.price === "Free" ? "Free" : `${c.price} ETH`;
   const progress = Math.round(c.minted / c.supply * 100);
-  return `<aside class="panel mint-module"><span class="state-label">${c.status}</span><h1>${c.name}</h1><p>${c.description}</p>${deployRow("Creator", `${c.creator} / ${c.creatorAddress}`)}${deployRow("Network", ACTIVE_NETWORK.name)}${deployRow("Contract", `<a href="${explorerAddress(c.contractAddress)}" target="_blank" rel="noopener noreferrer">${c.contractAddress}</a>`)}${deployRow("Mint price", price)}${deployRow("Supply", `${c.minted}/${c.supply}`)}${deployRow("Max per wallet", c.maxWallet)}${deployRow("Time left", c.endsIn)}<div class="progress"><span style="width:${progress}%"></span></div><div class="field"><label>Quantity</label><input type="number" min="1" max="${c.maxWallet}" value="1"></div><button class="btn primary block" onclick="showMintBlocked()">Mint NFT</button><p id="mintStatus">${state.mintState}</p><div class="divider"></div><h3>Primary revenue split</h3><p>Creator receives 95%. Nest receives 5% from primary mint revenue. Gas is paid separately by the buyer.</p><h3>Recent mint activity</h3>${platformActivity(c)}</aside>`;
+  const contract = c.contractAddress ? `<a href="${explorerAddress(c.contractAddress)}" target="_blank" rel="noopener noreferrer">${c.contractAddress}</a>` : "Pending deployment";
+  return `<aside class="panel mint-module"><span class="state-label">${c.status}</span><h1>${c.name}</h1><p>${c.description}</p>${deployRow("Creator", `${c.creator} / ${c.creatorAddress}`)}${deployRow("Network", c.chainName)}${deployRow("Contract", contract)}${deployRow("Mint price", price)}${deployRow("Supply", `${c.minted}/${c.supply}`)}${deployRow("Max per wallet", c.maxWallet)}${deployRow("Schedule", c.endsIn)}<div class="progress"><span style="width:${progress}%"></span></div><div class="field"><label>Quantity</label><input type="number" min="1" max="${c.maxWallet}" value="1" ${c.canMint ? "" : "disabled"}></div><button class="btn primary block" onclick="showMintBlocked()" ${c.canMint ? "" : "disabled"}>${c.canMint ? "Mint NFT" : "Mint not live yet"}</button><p id="mintStatus">${c.canMint ? state.mintState : "This database-backed collection is upcoming. Minting opens after its deployment is confirmed."}</p><div class="divider"></div><h3>Primary revenue split</h3><p>Creator receives 95%. Nest receives 5% from primary mint revenue. Gas is paid separately by the buyer.</p></aside>`;
 }
 
 function platformActivity(c) {
@@ -581,7 +605,14 @@ function dashboardStat(index) {
 }
 
 function adminPage() {
-  return shell(`<main class="page"><div class="section-head"><div><div class="kicker">Nest admin</div><h2>Contract-authorized controls only.</h2></div></div><div class="panel"><p>Admin access must be read from connected-wallet contract ownership or explicit authorization. This interface must not rely on a frontend-only role switcher.</p><table class="table"><tr><th>Function</th><th>Authority</th></tr><tr><td>View all factory deployments</td><td>Public indexed data</td></tr><tr><td>Feature/unfeature in app database</td><td>Server-side admin auth</td></tr><tr><td>Hide malicious content from discovery</td><td>Presentation only, does not delete blockchain data</td></tr><tr><td>Pause factory deployment</td><td>Factory owner</td></tr><tr><td>Manage Nest treasury</td><td>Contract permissions</td></tr><tr><td>Withdraw Nest revenue</td><td>Treasury role</td></tr></table></div></main>`);
+  const factory = state.factoryDeployment;
+  const addressRow = factory.contractAddress
+    ? `<a href="${explorerAddress(factory.contractAddress)}" target="_blank" rel="noopener noreferrer">${factory.contractAddress}</a>`
+    : "Created after wallet confirmation";
+  const txRow = factory.txHash
+    ? `<a href="${explorerTx(factory.txHash)}" target="_blank" rel="noopener noreferrer">${factory.txHash}</a>`
+    : "No transaction submitted";
+  return shell(`<main class="page"><div class="section-head"><div><div class="kicker">Nest admin</div><h2>Contract-authorized controls only.</h2></div></div><section class="section grid cols-2"><div class="panel"><span class="state-label">${ACTIVE_NETWORK_KEY === "mainnet" ? "Mainnet production" : "Testnet verification"}</span><h3>Deploy Nest factory</h3><p>This one-time transaction creates the factory used by all Nest collections on the active network. The connected wallet becomes factory owner.</p>${deployRow("Network", `${ACTIVE_NETWORK.name} / ${ACTIVE_NETWORK.chainId}`)}${deployRow("Runtime guard", ACTIVE_NETWORK_KEY === "mainnet" ? "Mainnet explicitly confirmed" : "Mainnet locked")}${deployRow("Owner", state.walletAddress || "Connect platform owner wallet")}${deployRow("Treasury", PLATFORM_TREASURY)}${deployRow("Primary fee", "5% / 500 bps")}${deployRow("Factory version", ACTIVE_FACTORY_VERSION)}${deployRow("Status", factory.status)}${deployRow("Transaction", txRow)}${deployRow("Contract", addressRow)}<div class="actions"><button class="btn primary" type="button" onclick="deployNetworkFactory()" ${factory.contractAddress ? "disabled" : ""}>${factory.contractAddress ? "Factory deployed" : `Deploy ${ACTIVE_NETWORK_KEY} factory`}</button><button class="btn ghost" type="button" onclick="switchNetwork()">Switch to ${ACTIVE_NETWORK_KEY}</button>${ACTIVE_NETWORK.faucet ? `<a class="btn ghost" href="${ACTIVE_NETWORK.faucet}" target="_blank" rel="noopener noreferrer">Get testnet ETH</a>` : ""}</div><p class="warning">Use the platform owner wallet. Never paste a seed phrase or private key into Nest, Railway, or GitHub.</p></div><div class="panel"><h3>After deployment</h3><table class="table"><tr><th>Step</th><th>Result</th></tr><tr><td>Explorer confirmation</td><td>Factory bytecode and constructor transaction visible</td></tr><tr><td>Railway variable</td><td>Add contract as ${ACTIVE_NETWORK_KEY === "mainnet" ? "FACTORY_MAINNET_ADDRESS" : "FACTORY_TESTNET_ADDRESS"}</td></tr><tr><td>Backend deployment API</td><td>Prepare creator-signed collection calls</td></tr><tr><td>Indexer</td><td>Track CollectionCreated and Minted events</td></tr></table></div></section><div class="panel"><p>Admin access must be read from connected-wallet contract ownership or explicit authorization. This interface must not rely on a frontend-only role switcher.</p><table class="table"><tr><th>Function</th><th>Authority</th></tr><tr><td>View all factory deployments</td><td>Public indexed data</td></tr><tr><td>Feature/unfeature in app database</td><td>Server-side admin auth</td></tr><tr><td>Hide malicious content from discovery</td><td>Presentation only, does not delete blockchain data</td></tr><tr><td>Pause factory deployment</td><td>Factory owner</td></tr><tr><td>Manage Nest treasury</td><td>Contract permissions</td></tr><tr><td>Withdraw Nest revenue</td><td>Treasury role</td></tr></table></div></main>`);
 }
 
 function activityList() {
@@ -599,17 +630,19 @@ async function checkBackend() {
     await loadBackendCollections();
   } catch (error) {
     state.backend = "offline";
-    state.backendMessage = "Backend offline; demo data remains available";
+    state.backendMessage = "Backend offline; upcoming mints are temporarily unavailable";
+    platformCollections = [];
   }
   render();
 }
 
 async function loadBackendCollections() {
-  const result = await apiRequest("/collections?status=LIVE&take=24");
+  const result = await apiRequest("/collections?status=UPCOMING&take=24");
+  platformCollections = [];
   if (!Array.isArray(result.items) || !result.items.length) return;
   platformCollections = result.items.map((c, index) => ({
     id: c.id,
-    contractAddress: c.contractAddress || "Pending deployment",
+    contractAddress: c.contractAddress || c.deployments?.[0]?.contractAddress || "",
     name: c.name,
     creator: c.creatorName || "Nest creator",
     creatorAddress: c.creatorWallet,
@@ -618,12 +651,28 @@ async function loadBackendCollections() {
     supply: c.maxSupply,
     price: weiToEth(c.mintPriceWei),
     maxWallet: c.maxPerWallet,
-    status: c.status === "LIVE" ? "Live mint" : c.status,
-    endsIn: c.mintEndAt ? new Date(c.mintEndAt).toLocaleDateString() : "Open",
+    status: collectionStatusLabel(c.status),
+    canMint: c.status === "LIVE" && Boolean(c.contractAddress || c.deployments?.[0]?.contractAddress),
+    chainName: c.chainName,
+    endsIn: mintSchedule(c),
     deployedAt: "Nest deployment",
     metadataCid: c.metadataBaseUri || "Metadata pending",
+    image: ipfsUrl(c.assets?.[0]?.ipfsUri || c.metadataItems?.[0]?.imageUri),
     art: index % ARTWORK.length
   }));
+}
+
+function collectionStatusLabel(status) {
+  return ({ STORAGE_READY: "Artwork ready", READY_TO_DEPLOY: "Upcoming mint", DEPLOYING: "Deployment pending", LIVE: "Live mint" })[status] || status;
+}
+
+function mintSchedule(collection) {
+  const now = Date.now();
+  const starts = collection.mintStartAt ? new Date(collection.mintStartAt) : null;
+  const ends = collection.mintEndAt ? new Date(collection.mintEndAt) : null;
+  if (starts && starts.getTime() > now) return `Starts ${starts.toLocaleString()}`;
+  if (ends) return `Ends ${ends.toLocaleString()}`;
+  return collection.status === "LIVE" ? "Open mint" : "Schedule pending";
 }
 
 function ethToWei(value) {
@@ -639,30 +688,193 @@ function weiToEth(value) {
   return fraction ? `${whole}.${fraction}` : whole;
 }
 
-async function connectWallet() {
-  state.notice = "";
-  if (!window.ethereum) {
-    state.notice = "No EVM wallet detected. Install a compatible wallet to sign in.";
+function openWalletPicker() { state.walletPickerOpen = true; render(); }
+function closeWalletPicker() { state.walletPickerOpen = false; render(); }
+
+function resetWalletSession(message = "Wallet disconnected.") {
+  state.wallet = "disconnected";
+  state.walletAddress = "";
+  state.walletProviderName = "";
+  state.authToken = "";
+  localStorage.removeItem("nestWalletAddress");
+  localStorage.removeItem("nestAuthToken");
+  state.notice = message;
+}
+
+function observeWalletProvider(provider) {
+  if (!provider?.on || observedWalletProviders.has(provider)) return;
+  observedWalletProviders.add(provider);
+  provider.on("accountsChanged", (accounts) => {
+    const walletAddress = accounts?.[0] || "";
+    state.walletAddress = walletAddress;
+    state.authToken = "";
+    localStorage.removeItem("nestAuthToken");
+    if (walletAddress) localStorage.setItem("nestWalletAddress", walletAddress);
+    else localStorage.removeItem("nestWalletAddress");
+    state.notice = walletAddress ? "Wallet account changed. Sign in again to continue." : "Wallet disconnected.";
     render();
+  });
+  provider.on("disconnect", () => { resetWalletSession(); render(); });
+  provider.on("chainChanged", () => render());
+}
+
+async function getWalletConnectProvider() {
+  if (walletConnectProvider) return walletConnectProvider;
+  const walletConnectModule = await import(WALLETCONNECT_PROVIDER_URL);
+  const EthereumProvider = walletConnectModule.default || walletConnectModule.EthereumProvider;
+  if (!EthereumProvider?.init) throw new Error("WalletConnect could not be initialized.");
+  walletConnectProvider = await EthereumProvider.init({
+    projectId: WALLETCONNECT_PROJECT_ID,
+    chains: [ACTIVE_NETWORK.chainId],
+    optionalChains: [SECONDARY_NETWORK.chainId],
+    showQrModal: true,
+    rpcMap: {
+      [NETWORKS.testnet.chainId]: NETWORKS.testnet.rpcUrl,
+      [NETWORKS.mainnet.chainId]: NETWORKS.mainnet.rpcUrl
+    },
+    methods: ["eth_sendTransaction", "personal_sign", "eth_signTypedData_v4", "wallet_switchEthereumChain", "wallet_addEthereumChain"],
+    events: ["accountsChanged", "chainChanged", "disconnect"],
+    metadata: {
+      name: "Nest",
+      description: "NFT launch infrastructure for Robinhood Chain",
+      url: location.origin,
+      icons: []
+    }
+  });
+  observeWalletProvider(walletConnectProvider);
+  return walletConnectProvider;
+}
+
+async function authenticateWallet(provider, walletAddress) {
+  if (state.backend !== "online") {
+    state.notice = "Wallet connected. Backend is offline, so launch drafts remain local for now.";
     return;
   }
+  const challenge = await apiRequest("/auth/nonce", { method: "POST", body: JSON.stringify({ walletAddress }) });
+  const signature = await provider.request({ method: "personal_sign", params: [challenge.message, walletAddress] });
+  const verified = await apiRequest("/auth/verify", { method: "POST", body: JSON.stringify({ sessionId: challenge.sessionId, message: challenge.message, signature }) });
+  state.authToken = verified.token;
+  localStorage.setItem("nestAuthToken", verified.token);
+  state.notice = "Wallet connected and authenticated with Nest.";
+}
+
+async function connectWallet(mode = "injected") {
+  state.walletPickerOpen = false;
+  state.notice = mode === "walletconnect" ? "Opening WalletConnect..." : "Opening browser wallet...";
+  render();
   try {
-    const [walletAddress] = await window.ethereum.request({ method: "eth_requestAccounts" });
+    let provider;
+    let accounts;
+    if (mode === "walletconnect") {
+      provider = await getWalletConnectProvider();
+      await provider.connect();
+      accounts = provider.accounts?.length ? provider.accounts : await provider.request({ method: "eth_accounts" });
+      state.walletProviderName = "WalletConnect";
+    } else {
+      if (!window.ethereum) throw new Error("No browser wallet detected. Use WalletConnect or install a compatible wallet.");
+      provider = window.ethereum;
+      observeWalletProvider(provider);
+      accounts = await provider.request({ method: "eth_requestAccounts" });
+      state.walletProviderName = "Browser wallet";
+    }
+    const walletAddress = accounts?.[0];
+    if (!walletAddress) throw new Error("The wallet did not return an account.");
+    activeWalletProvider = provider;
     state.wallet = "connected";
     state.walletAddress = walletAddress;
     localStorage.setItem("nestWalletAddress", walletAddress);
-    if (state.backend === "online") {
-      const challenge = await apiRequest("/auth/nonce", { method: "POST", body: JSON.stringify({ walletAddress }) });
-      const signature = await window.ethereum.request({ method: "personal_sign", params: [challenge.message, walletAddress] });
-      const verified = await apiRequest("/auth/verify", { method: "POST", body: JSON.stringify({ sessionId: challenge.sessionId, message: challenge.message, signature }) });
-      state.authToken = verified.token;
-      localStorage.setItem("nestAuthToken", verified.token);
-      state.notice = "Wallet connected and authenticated with Nest.";
-    } else {
-      state.notice = "Wallet connected. Backend is offline, so launch drafts remain local for now.";
-    }
+    await authenticateWallet(provider, walletAddress);
   } catch (error) {
     state.notice = `Wallet connection failed: ${error.message}`;
+  }
+  render();
+}
+
+async function disconnectWallet() {
+  try {
+    if (activeWalletProvider === walletConnectProvider && walletConnectProvider?.disconnect) {
+      await walletConnectProvider.disconnect();
+    }
+  } catch {}
+  activeWalletProvider = null;
+  resetWalletSession();
+  render();
+}
+
+async function waitForTransactionReceipt(provider, txHash, attempts = 60) {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const receipt = await provider.request({ method: "eth_getTransactionReceipt", params: [txHash] });
+    if (receipt) return receipt;
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+  }
+  throw new Error("Transaction is still pending. Use the explorer link to continue tracking it.");
+}
+
+async function ensureActiveNetwork(provider) {
+  const chainId = `0x${ACTIVE_NETWORK.chainId.toString(16)}`;
+  if (provider === walletConnectProvider) {
+    const connectedChainId = await provider.request({ method: "eth_chainId" });
+    if (Number(connectedChainId) !== ACTIVE_NETWORK.chainId) {
+      throw new Error(`Select ${ACTIVE_NETWORK.name} in your wallet and reconnect.`);
+    }
+    return;
+  }
+  try {
+    await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId }] });
+  } catch (error) {
+    if (error.code !== 4902 && !error.message?.includes("Unrecognized chain")) throw error;
+    await provider.request({ method: "wallet_addEthereumChain", params: [{
+      chainId,
+      chainName: ACTIVE_NETWORK.name,
+      nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
+      rpcUrls: [ACTIVE_NETWORK.rpcUrl],
+      blockExplorerUrls: [ACTIVE_NETWORK.explorer]
+    }] });
+  }
+}
+
+async function deployNetworkFactory() {
+  if (!state.walletAddress || !activeWalletProvider) {
+    state.notice = "Connect the platform owner wallet before deploying the factory.";
+    openWalletPicker();
+    return;
+  }
+  state.factoryDeployment.status = "Preparing contract bytecode";
+  render();
+  try {
+    await ensureActiveNetwork(activeWalletProvider);
+    const [artifactResponse, viem] = await Promise.all([
+      fetch(FACTORY_ARTIFACT_URL, { cache: "no-store" }),
+      import(VIEM_PROVIDER_URL)
+    ]);
+    if (!artifactResponse.ok) throw new Error("Factory artifact could not be loaded.");
+    const artifact = await artifactResponse.json();
+    const data = viem.encodeDeployData({
+      abi: artifact.abi,
+      bytecode: artifact.bytecode,
+      args: [state.walletAddress, PLATFORM_TREASURY, 500, ACTIVE_FACTORY_VERSION]
+    });
+    const gas = await activeWalletProvider.request({
+      method: "eth_estimateGas",
+      params: [{ from: state.walletAddress, data }]
+    });
+    state.factoryDeployment.status = "Waiting for wallet confirmation";
+    render();
+    const txHash = await activeWalletProvider.request({
+      method: "eth_sendTransaction",
+      params: [{ from: state.walletAddress, data, gas }]
+    });
+    state.factoryDeployment.txHash = txHash;
+    state.factoryDeployment.status = `Pending ${ACTIVE_NETWORK.name} confirmation`;
+    render();
+    const receipt = await waitForTransactionReceipt(activeWalletProvider, txHash);
+    if (receipt.status !== "0x1" || !receipt.contractAddress) throw new Error("Factory deployment transaction failed.");
+    state.factoryDeployment.contractAddress = receipt.contractAddress;
+    state.factoryDeployment.status = `Confirmed on ${ACTIVE_NETWORK.name}`;
+    localStorage.setItem(ACTIVE_FACTORY_STORAGE_KEY, receipt.contractAddress);
+    state.notice = `Factory deployed. Add the confirmed address to Railway as ${ACTIVE_NETWORK_KEY === "mainnet" ? "FACTORY_MAINNET_ADDRESS" : "FACTORY_TESTNET_ADDRESS"}.`;
+  } catch (error) {
+    state.factoryDeployment.status = `Failed: ${error.message}`;
   }
   render();
 }
@@ -715,27 +927,75 @@ async function continueLaunch() {
 }
 
 async function uploadArtwork(files) {
-  if (!files?.length) return;
+  const selected = [...(files || [])];
+  if (!selected.length) return;
+  const allowedTypes = new Set(["image/png", "image/jpeg", "image/webp", "image/gif", "video/mp4", "model/gltf-binary"]);
+  const validFiles = selected.filter((file) => {
+    const isGlb = file.name.toLowerCase().endsWith(".glb") && (!file.type || file.type === "application/octet-stream");
+    return (allowedTypes.has(file.type) || isGlb) && file.size <= 25 * 1024 * 1024;
+  });
+  const rejectedCount = selected.length - validFiles.length;
+  state.artworkAssets.forEach((asset) => { if (asset.previewUrl) URL.revokeObjectURL(asset.previewUrl); });
+  state.artworkAssets = validFiles.map((file) => ({
+    file,
+    name: file.name,
+    kind: file.type.startsWith("image/") ? "image" : file.type.startsWith("video/") ? "video" : "model",
+    previewUrl: file.type.startsWith("image/") || file.type.startsWith("video/") ? URL.createObjectURL(file) : "",
+    status: "Ready to upload"
+  }));
+  state.notice = rejectedCount ? `${validFiles.length} file(s) ready. ${rejectedCount} file(s) rejected because of type or 25 MB size limit.` : `${validFiles.length} artwork file(s) ready for preview.`;
+  render();
+  if (!validFiles.length) return;
   if (!state.collectionId) await saveDraft(true);
   if (state.backend !== "online" || !state.authToken || !state.collectionId) {
-    state.notice = `${files.length} file(s) selected. Connect the backend and wallet to upload to IPFS.`;
+    state.notice = `${validFiles.length} artwork file(s) previewed locally. Connect and sign the wallet to pin them to IPFS.`;
     render();
     return;
   }
   try {
+    state.artworkAssets.forEach((asset) => { asset.status = "Uploading to IPFS"; });
+    render();
     const form = new FormData();
     form.append("collectionId", state.collectionId);
-    [...files].forEach((file) => form.append("file", file));
+    validFiles.forEach((file) => form.append("file", file, file.name));
     const result = await apiRequest("/storage/artwork", { method: "POST", body: form });
-    state.notice = `${result.assets.length} artwork file(s) uploaded and pinned to IPFS.`;
+    state.artworkAssets = state.artworkAssets.map((asset, index) => ({ ...asset, ipfsUri: result.assets?.[index]?.ipfsUri || "", status: result.assets?.[index]?.ipfsUri ? "Pinned to IPFS" : "Uploaded" }));
+    state.notice = `${result.assets?.length || validFiles.length} artwork file(s) uploaded and pinned to IPFS.`;
   } catch (error) {
+    state.artworkAssets.forEach((asset) => { asset.status = "Upload failed - retry after reconnecting"; });
     state.notice = `Artwork upload failed: ${error.message}`;
   }
   render();
 }
+
 function runReadiness() { state.readiness = "Requires live Wagmi/Viem check"; render(); }
-function addNetwork() { state.deploymentState = "Use wallet_addEthereumChain with centralized Robinhood Chain config."; render(); }
-function switchNetwork() { state.deploymentState = "Use wallet_switchEthereumChain and validate chainId before deployment."; render(); }
+async function addNetwork() {
+  try {
+    if (!activeWalletProvider) throw new Error("Connect a wallet first.");
+    await activeWalletProvider.request({ method: "wallet_addEthereumChain", params: [{
+      chainId: `0x${ACTIVE_NETWORK.chainId.toString(16)}`,
+      chainName: ACTIVE_NETWORK.name,
+      nativeCurrency: { name: ACTIVE_NETWORK.currency, symbol: ACTIVE_NETWORK.currency, decimals: 18 },
+      rpcUrls: [ACTIVE_NETWORK.rpcUrl],
+      blockExplorerUrls: [ACTIVE_NETWORK.explorer]
+    }] });
+    state.deploymentState = `${ACTIVE_NETWORK.name} added to the connected wallet.`;
+  } catch (error) {
+    state.deploymentState = `Network setup failed: ${error.message}`;
+  }
+  render();
+}
+async function switchNetwork() {
+  try {
+    if (!activeWalletProvider) throw new Error("Connect a wallet first.");
+    await activeWalletProvider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: `0x${ACTIVE_NETWORK.chainId.toString(16)}` }] });
+    state.deploymentState = `Connected to ${ACTIVE_NETWORK.name}.`;
+  } catch (error) {
+    if (error.code === 4902 || error.message?.includes("Unrecognized chain")) return addNetwork();
+    state.deploymentState = `Network switch failed: ${error.message}`;
+    render();
+  }
+}
 function showDeployBlocked() { state.deploymentState = "No transaction sent in this static preview. Wire Wagmi + Viem simulation before enabling deployment."; render(); }
 function showMintBlocked() { state.mintState = "No mint transaction sent in this static preview. Read contract state and simulate mint before enabling."; render(); }
 function tiltModel(event) {

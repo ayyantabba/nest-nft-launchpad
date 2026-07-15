@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {ERC721Royalty} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Royalty.sol";
 import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
@@ -178,7 +179,7 @@ contract RobinhoodNFTCollection is ERC721Royalty, Ownable2Step, ReentrancyGuard,
         return string.concat(baseTokenURI, tokenId.toString(), ".json");
     }
 
-    function supportsInterface(bytes4 interfaceId) public view override(ERC721Royalty, ERC721) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view override(ERC721Royalty) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 }

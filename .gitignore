@@ -21,6 +21,7 @@ dist/
 **/dist/
 coverage/
 **/.npm-cache/
+outputs/contracts/artifacts/
 *.log
 
 # Generated handoff archives
