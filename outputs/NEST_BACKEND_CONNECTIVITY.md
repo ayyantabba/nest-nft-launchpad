@@ -76,7 +76,7 @@ ROBINHOOD_TESTNET_RPC=https://rpc.testnet.chain.robinhood.com
 ROBINHOOD_MAINNET_RPC=https://rpc.mainnet.chain.robinhood.com
 CONFIRM_MAINNET_DEPLOYMENT=false
 
-PLATFORM_TREASURY_ADDRESS=
+PLATFORM_TREASURY_ADDRESS=0xaB81d488395EdebC6632c7546d223439bD8FBdD1
 
 IPFS_PROVIDER=
 IPFS_API_KEY=
@@ -118,3 +118,4 @@ OPENSEA_API_KEY=
 - Backend verifies signed messages only.
 - Deployment and mint transactions are signed by the connected wallet.
 - Nest records transaction hashes and indexes events afterward.
+
