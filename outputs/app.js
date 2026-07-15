@@ -237,6 +237,7 @@ let state = {
   readiness: "Not checked",
   deploymentState: "Awaiting wallet confirmation",
   mintState: "Connect wallet and read chain state before minting",
+  marketplaceState: "OpenSea indexing begins after a confirmed mainnet mint.",
   launchStep: 1,
   backend: "checking",
   backendMessage: "Connecting to Nest API",
@@ -567,7 +568,7 @@ function mintModule(c) {
   const progress = Math.round(c.minted / c.supply * 100);
   const contract = c.contractAddress ? '<a href="' + explorerAddress(c.contractAddress) + '" target="_blank" rel="noopener noreferrer">' + c.contractAddress + "</a>" : "Pending deployment";
   const lastMint = state.lastMint?.collectionId === c.id ? state.lastMint : null;
-  const marketplace = ACTIVE_NETWORK_KEY === "mainnet" && c.contractAddress ? '<a class="btn ghost block" href="' + (lastMint?.tokenIds?.[0] ? openseaAssetUrl(c.contractAddress, lastMint.tokenIds[0]) : openseaSearchUrl(c.name)) + '" target="_blank" rel="noopener noreferrer">View on OpenSea</a>' : "";
+  const marketplace = ACTIVE_NETWORK_KEY === "mainnet" && c.contractAddress ? ('<div class="marketplace-handoff"><a class="btn ghost block" href="' + (lastMint?.tokenIds?.[0] ? openseaAssetUrl(c.contractAddress, lastMint.tokenIds[0]) : openseaSearchUrl(c.name)) + '" target="_blank" rel="noopener noreferrer">View on OpenSea</a>' + (lastMint?.tokenIds?.[0] ? '<button class="btn ghost block" onclick="requestOpenSeaRefresh(\'' + c.id + '\',' + lastMint.tokenIds[0] + ')">Refresh OpenSea metadata</button>' : '') + '<p class="hint">' + state.marketplaceState + '</p></div>') : '<p class="hint">OpenSea handoff is enabled after a confirmed mainnet mint. Testnet ownership remains visible in Nest and the chain explorer.</p>';
   return `<aside class="panel mint-module"><span class="state-label">${c.status}</span><h1>${c.name}</h1><p>${c.description}</p>${deployRow("Creator", c.creator + " / " + c.creatorAddress)}${deployRow("Network", c.chainName)}${deployRow("Contract", contract)}${deployRow("Mint price", price)}${deployRow("Supply", c.minted + "/" + c.supply)}${deployRow("Max per wallet", c.maxWallet)}${deployRow("Schedule", c.endsIn)}<div class="progress"><span style="width:${progress}%"></span></div><div class="field"><label>Quantity</label><input id="mint-quantity-${c.id}" type="number" min="1" max="${Math.min(c.maxWallet, c.maxTx || c.maxWallet)}" value="1" ${c.canMint ? "" : "disabled"}></div><button class="btn primary block" onclick="mintCollection('${c.id}')" ${c.canMint ? "" : "disabled"}>${c.canMint ? "Mint NFT" : "Mint not live yet"}</button><p id="mintStatus">${c.canMint ? state.mintState : "This collection is upcoming. Minting opens after its deployment is confirmed."}</p>${lastMint ? '<div class="notice success">Mint confirmed. Token IDs: ' + lastMint.tokenIds.join(", ") + ' <a href="' + explorerTx(lastMint.txHash) + '" target="_blank" rel="noopener noreferrer">View transaction</a></div>' : ""}${marketplace}<div class="divider"></div><h3>Primary revenue split</h3><p>Creator receives 95%. Nest receives 5% from primary mint revenue. Gas is paid separately by the buyer.</p></aside>`;
 }
 
@@ -1097,6 +1098,33 @@ async function mintCollection(collectionId) {
     state.mintState = "Mint confirmed and ownership recorded.";
     await loadBackendCollections(); render();
   } catch (error) { state.mintState = "Mint failed: " + error.message; render(); }
+}
+
+async function requestOpenSeaRefresh(collectionId, tokenId) {
+  if (ACTIVE_NETWORK_KEY !== "mainnet") {
+    state.marketplaceState = "OpenSea refresh is available on mainnet after launch.";
+    render();
+    return;
+  }
+  if (!state.authToken) {
+    state.marketplaceState = "Connect and sign your wallet before requesting a metadata refresh.";
+    render();
+    return;
+  }
+  state.marketplaceState = "Requesting OpenSea metadata refresh...";
+  render();
+  try {
+    const result = await apiRequest("/marketplace/opensea/refresh", {
+      method: "POST",
+      body: JSON.stringify({ collectionId, tokenId: Number(tokenId) })
+    });
+    state.marketplaceState = result.status === "queued"
+      ? "Refresh queued. OpenSea indexing can take several minutes."
+      : "Refresh request submitted.";
+  } catch (error) {
+    state.marketplaceState = "OpenSea refresh unavailable: " + error.message;
+  }
+  render();
 }
 
 function tiltModel(event) {
