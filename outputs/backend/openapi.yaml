@@ -37,6 +37,12 @@ paths:
     get:
       summary: Health and database check
       responses: { '200': { description: Healthy } }
+  /health/storage:
+    get:
+      summary: Verify server-side IPFS provider authentication
+      responses:
+        '200': { description: Storage provider authenticated }
+        '503': { description: Storage provider missing or authentication failed }
   /auth/nonce:
     post:
       summary: Create a wallet sign-in challenge
@@ -108,3 +114,4 @@ paths:
       security: [{ bearerAuth: [] }]
       summary: Creator collections and aggregate metrics
       responses: { '200': { description: Dashboard data } }
+
