@@ -24,6 +24,9 @@ const NETWORKS = {
 const ACTIVE_NETWORK = NETWORKS.testnet;
 const WALLETCONNECT_PROJECT_ID = window.NEST_WALLETCONNECT_PROJECT_ID || "63564cf2fc58ce8b1059edd34ac041e0";
 const WALLETCONNECT_PROVIDER_URL = "https://esm.sh/@walletconnect/ethereum-provider@2.23.10?bundle";
+const VIEM_PROVIDER_URL = "https://esm.sh/viem@2.31.7?bundle";
+const PLATFORM_TREASURY = "0xaB81d488395EdebC6632c7546d223439bD8FBdD1";
+const FACTORY_ARTIFACT_URL = "./assets/contracts/RobinhoodNFTFactory.json";
 const DEFAULT_API_BASE = "https://nest-nft-launchpad-production.up.railway.app/v1";
 const API_BASE = window.NEST_API_URL || localStorage.getItem("nestApiUrl") || DEFAULT_API_BASE;
 const API_ORIGIN = API_BASE.replace(/\/v1\/?$/, "");
@@ -228,6 +231,11 @@ let state = {
   launchStep: 1,
   backend: "checking",
   backendMessage: "Connecting to Nest API",
+  factoryDeployment: {
+    status: "Not deployed",
+    txHash: "",
+    contractAddress: localStorage.getItem("nestFactoryTestnetAddress") || ""
+  },
   authToken: localStorage.getItem("nestAuthToken") || "",
   walletAddress: localStorage.getItem("nestWalletAddress") || "",
   collectionId: localStorage.getItem("nestDraftCollectionId") || "",
@@ -419,34 +427,7 @@ function processSection() {
 }
 
 function chainSection() {
-  return `<section class="section editorial-split"><div><div class="kicker">Robinhood Chain</div><h2>Creator-owned ERC-721 contracts on an EVM network.</h2><p>Deploy standard ERC-721 metadata contracts, pay gas in ETH, verify bytecode on the public explorer, and expose metadata for OpenSea indexing when marketplace support is available.</p></div><div class="technical-table"><div><span>Network</span><strong>${ACTIVE_NETWORK.name}</strong></div><div><span>Chain ID</span><strong>${ACTIVE_NETWORK.chainId}</strong></div><div><span>RPC</span><strong>${ACTIVE_NETWORK.rpcUrl}</strong></div><div><span>Explorer</span><strong>${ACTIVE_NETWORK.explorer}</strong></div><div><span>Standard</span><strong>ERC-721 + ERC-2981 signaling</strong></div></div></section>`;
-}
-
-function economicsSection() {
-  return `<section class="section economics" data-counter-section><div><div clas…4178 tokens truncated…"}</span><h1>${c.name}</h1><p>${c.description}</p></div></div><div class="section grid cols-3 market-samples">${[0,1,2,3,4,5].map(i=>`<div class="nft-art thumb-large" style="${artStyle((c.art || 0) + i)}"></div>`).join("")}</div></section><aside class="panel mint-module"><span class="state-label">Marketplace data</span><h2>${c.name}</h2><p>OpenSea discovery record for Robinhood Chain.</p>${deployRow("Source", c.creator || "OpenSea marketplace")}${deployRow("Floor", c.floor)}${deployRow("1d movement", `<span class="metric-${c.changeType}">${c.change}</span>`)}${deployRow("Status", c.status)}${deployRow("OpenSea", c.openseaUrl ? `<a href="${c.openseaUrl}" target="_blank" rel="noopener noreferrer">Open collection search</a>` : "OpenSea URL unavailable")}${deployRow("Contract", c.contractAddress ? `<a href="${explorerAddress(c.contractAddress)}" target="_blank" rel="noopener noreferrer">${c.contractAddress}</a>` : "Pending API hydration")}<div class="divider"></div><h3>Recent market activity</h3>${activityList()}<h3>Disclosures</h3><p>Thumbnails are shown at avatar size because the current source is the OpenSea ranking screenshot. Live API images should replace these when connected.</p></aside></main>`);
-}
-
-function deployRow(a,b) {
-  return `<div class="stat-row"><span>${a}</span><strong>${b}</strong></div>`;
-}
-
-function explorePage() {
-  return shell(`<main class="page explore-layout"><aside class="panel filters"><h3>Filters</h3>${["NFTs / collections","floor price","1d movement","verified","recent activity","Robinhood Chain"].map(x=>`<label><span>${x}</span><select><option>Any</option></select></label>`).join("")}<p class="hint">Current records are seeded from OpenSea ranking visibility. Filters become live when the OpenSea API adapter returns collection rows.</p></aside><section><div class="section-head"><div><div class="kicker">Robinhood Chain discovery</div><h2>Explore OpenSea collections</h2></div></div><div class="actions">${["OpenSea ranked","Verified","Floor under 0.01","Positive 1d","Recently active"].map(x=>`<button class="btn small">${x}</button>`).join("")}</div>${openseaCollections.length ? `<div class="grid gallery-grid">${openseaCollections.map(card).join("")}</div>` : openseaEmptyState("No OpenSea collections loaded", "The discovery page is now wired for real OpenSea data only. Once Robinhood Chain appears in the supported chains response and the API key is configured, collections will render here.")}</section></main>`);
-}
-
-function dashboardPage() {
-  const collectionRows = platformCollections.map(c=>`<tr><td><div class="mini-art" style="${artStyle(c.art || 0)}"></div></td><td>${c.name}</td><td>${c.minted}/${c.supply}</td><td>${c.price === "Free" ? "Free" : `${c.price} ETH`}</td><td><a href="#/mint/${c.id}">Mint page</a></td></tr>`).join("");
-  return shell(`<main class="page"><div class="section-head"><div><div class="kicker">Creator dashboard</div><h2>Manage Nest-deployed collections.</h2></div></div><div class="stats">${["Nest collections","Live collections","Total minted","Primary volume","Creator accrued","Nest fees","Withdrawable","Unique minters"].map((x,i)=>`<div class="stat"><span>${x}</span><strong>${dashboardStat(i)}</strong></div>`).join("")}</div><div class="section grid cols-2"><div class="panel"><h3>Collections deployed on Nest</h3><table class="table"><tr><th>Artwork</th><th>Name</th><th>Minted</th><th>Price</th><th>Link</th></tr>${collectionRows}</table></div><div class="panel"><h3>Creator actions</h3><table class="table"><tr><td>Open mint page</td><td>Public buyer-facing route</td></tr><tr><td>View contract</td><td>Robinhood Chain explorer</td></tr><tr><td>Revenue split</td><td>95% creator / 5% Nest</td></tr><tr><td>Withdraw creator balance</td><td>Contract call placeholder</td></tr><tr><td>Reveal metadata</td><td>Owner action placeholder</td></tr><tr><td>Sync OpenSea</td><td>Marketplace adapter placeholder</td></tr></table><p class="hint">Dashboard totals come from Nest deployments, not external OpenSea rankings.</p></div></div></main>`);
-}
-
-function dashboardStat(index) {
-  const totalMinted = platformCollections.reduce((sum, item) => sum + item.minted, 0);
-  const live = platformCollections.filter((item) => item.status !== "Ended").length;
-  return [platformCollections.length, live, totalMinted, "Onchain read", "Onchain read", "Onchain read", "Contract read", "Indexer sync"][index];
-}
-
-function adminPage() {
-  return shell(`<main class="page"><div class="section-head"><div><div class="kicker">Nest admin</div><h2>Contract-authorized controls only.</h2></div></div><div class="panel"><p>Admin access must be read from connected-wallet contract ownership or explicit authorization. This interface must not rely on a frontend-only role switcher.</p><table class="table"><tr><th>Function</th><th>Authority</th></tr><tr><td>View all factory deployments</td><td>Public indexed data</td></tr><tr><td>Feature/unfeature in app database</td><td>Server-side admin auth</td></tr><tr><td>Hide malicious content from discovery</td><td>Presentation only, does not delete blockchain data</td></tr><tr><td>Pause factory deployment</td><td>Factory owner</td></tr><tr><td>Manage Nest treasury</td><td>Contract permissions</td></tr><tr><td>Withdraw Nest revenue</td><td>Treasury role</td></tr></table></div></main>`);
+  return `<section class="section editorial-split"><div><div class="kicker">Robinhood Chain</div><h2>Creator-owned ERC-721 contracts on an EVM network.</h2><p>Deploy standard ERC-721 metadata contracts, pay gas in ETH, verify bytecode on the public explorer, and expose metadata for OpenSea indexing when marketplace support is available.</p></div><div class="technical-table"><div><span>Network</span><strong>${ACTIVE_NETWORK.name}</strong></div><div><span>Chain ID</span><strong>${ACTIVE_NETWORK.chainId}</stron…5544 tokens truncated…>Testnet setup</span><h3>Deploy Nest factory</h3><p>This one-time transaction creates the factory used by all Nest testnet collections. The connected wallet becomes factory owner.</p>${deployRow("Network", `${NETWORKS.testnet.name} / ${NETWORKS.testnet.chainId}`)}${deployRow("Owner", state.walletAddress || "Connect platform owner wallet")}${deployRow("Treasury", PLATFORM_TREASURY)}${deployRow("Primary fee", "5% / 500 bps")}${deployRow("Factory version", "1.0.0-testnet")}${deployRow("Status", factory.status)}${deployRow("Transaction", txRow)}${deployRow("Contract", addressRow)}<div class="actions"><button class="btn primary" type="button" onclick="deployTestnetFactory()" ${factory.contractAddress ? "disabled" : ""}>${factory.contractAddress ? "Factory deployed" : "Deploy testnet factory"}</button><button class="btn ghost" type="button" onclick="switchNetwork()">Switch to testnet</button></div><p class="warning">Use the platform owner wallet. Never paste a seed phrase or private key into Nest, Railway, or GitHub.</p></div><div class="panel"><h3>After deployment</h3><table class="table"><tr><th>Step</th><th>Result</th></tr><tr><td>Explorer confirmation</td><td>Factory bytecode and constructor transaction visible</td></tr><tr><td>Railway variable</td><td>Add contract as FACTORY_TESTNET_ADDRESS</td></tr><tr><td>Backend deployment API</td><td>Prepare creator-signed collection calls</td></tr><tr><td>Indexer</td><td>Track CollectionCreated and Minted events</td></tr></table></div></section><div class="panel"><p>Admin access must be read from connected-wallet contract ownership or explicit authorization. This interface must not rely on a frontend-only role switcher.</p><table class="table"><tr><th>Function</th><th>Authority</th></tr><tr><td>View all factory deployments</td><td>Public indexed data</td></tr><tr><td>Feature/unfeature in app database</td><td>Server-side admin auth</td></tr><tr><td>Hide malicious content from discovery</td><td>Presentation only, does not delete blockchain data</td></tr><tr><td>Pause factory deployment</td><td>Factory owner</td></tr><tr><td>Manage Nest treasury</td><td>Contract permissions</td></tr><tr><td>Withdraw Nest revenue</td><td>Treasury role</td></tr></table></div></main>`);
 }
 
 function activityList() {
@@ -632,6 +613,77 @@ async function disconnectWallet() {
   } catch {}
   activeWalletProvider = null;
   resetWalletSession();
+  render();
+}
+
+async function waitForTransactionReceipt(provider, txHash, attempts = 60) {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const receipt = await provider.request({ method: "eth_getTransactionReceipt", params: [txHash] });
+    if (receipt) return receipt;
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+  }
+  throw new Error("Transaction is still pending. Use the explorer link to continue tracking it.");
+}
+
+async function ensureTestnetNetwork(provider) {
+  const chainId = `0x${NETWORKS.testnet.chainId.toString(16)}`;
+  try {
+    await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId }] });
+  } catch (error) {
+    if (error.code !== 4902 && !error.message?.includes("Unrecognized chain")) throw error;
+    await provider.request({ method: "wallet_addEthereumChain", params: [{
+      chainId,
+      chainName: NETWORKS.testnet.name,
+      nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
+      rpcUrls: [NETWORKS.testnet.rpcUrl],
+      blockExplorerUrls: [NETWORKS.testnet.explorer]
+    }] });
+  }
+}
+
+async function deployTestnetFactory() {
+  if (!state.walletAddress || !activeWalletProvider) {
+    state.notice = "Connect the platform owner wallet before deploying the factory.";
+    openWalletPicker();
+    return;
+  }
+  state.factoryDeployment.status = "Preparing contract bytecode";
+  render();
+  try {
+    await ensureTestnetNetwork(activeWalletProvider);
+    const [artifactResponse, viem] = await Promise.all([
+      fetch(FACTORY_ARTIFACT_URL, { cache: "no-store" }),
+      import(VIEM_PROVIDER_URL)
+    ]);
+    if (!artifactResponse.ok) throw new Error("Factory artifact could not be loaded.");
+    const artifact = await artifactResponse.json();
+    const data = viem.encodeDeployData({
+      abi: artifact.abi,
+      bytecode: artifact.bytecode,
+      args: [state.walletAddress, PLATFORM_TREASURY, 500, "1.0.0-testnet"]
+    });
+    const gas = await activeWalletProvider.request({
+      method: "eth_estimateGas",
+      params: [{ from: state.walletAddress, data }]
+    });
+    state.factoryDeployment.status = "Waiting for wallet confirmation";
+    render();
+    const txHash = await activeWalletProvider.request({
+      method: "eth_sendTransaction",
+      params: [{ from: state.walletAddress, data, gas }]
+    });
+    state.factoryDeployment.txHash = txHash;
+    state.factoryDeployment.status = "Pending testnet confirmation";
+    render();
+    const receipt = await waitForTransactionReceipt(activeWalletProvider, txHash);
+    if (receipt.status !== "0x1" || !receipt.contractAddress) throw new Error("Factory deployment transaction failed.");
+    state.factoryDeployment.contractAddress = receipt.contractAddress;
+    state.factoryDeployment.status = "Confirmed on Robinhood Chain Testnet";
+    localStorage.setItem("nestFactoryTestnetAddress", receipt.contractAddress);
+    state.notice = "Factory deployed. Add the confirmed address to Railway as FACTORY_TESTNET_ADDRESS.";
+  } catch (error) {
+    state.factoryDeployment.status = `Failed: ${error.message}`;
+  }
   render();
 }
 
