@@ -208,59 +208,7 @@ const OPENSEA_SOURCE = {
   note: "OpenSea data requires an API key and a supported-chain slug before collection, listing, floor, and activity data can be shown."
 };
 
-let platformCollections = [
-  {
-    id: "market-hours",
-    contractAddress: "0x7b2d00000000000000000000000000000000a101",
-    name: "Market Hours",
-    creator: "Haven Studio",
-    creatorAddress: "0xA19f23db9042c36Bf8e2E9353b90a1Ce82D2B8E2",
-    description: "A Nest-launched Robinhood Chain collection for onchain art collectors.",
-    minted: 74,
-    supply: 250,
-    price: "0.018",
-    maxWallet: 3,
-    status: "Live mint",
-    endsIn: "18h 24m",
-    deployedAt: "Nest deployment",
-    metadataCid: "ipfs://bafy-platform-market-hours",
-    art: 0
-  },
-  {
-    id: "lime-ledger-studies",
-    contractAddress: "0x7b2d00000000000000000000000000000000b202",
-    name: "Lime Ledger Studies",
-    creator: "Archive Desk",
-    creatorAddress: "0x7a31B6f2C1E62F2dAC908c6E4468dC7a8E2D9F02",
-    description: "A clean edition drop deployed through the Nest contract factory.",
-    minted: 12,
-    supply: 100,
-    price: "0.01",
-    maxWallet: 2,
-    status: "Allowlist opening",
-    endsIn: "2d 04h",
-    deployedAt: "Nest deployment",
-    metadataCid: "ipfs://bafy-platform-ledger",
-    art: 1
-  },
-  {
-    id: "settlement-objects",
-    contractAddress: "0x7b2d00000000000000000000000000000000c303",
-    name: "Settlement Objects",
-    creator: "North Terminal",
-    creatorAddress: "0x43dE1F51642A26391dA6712e8b98a13b61EFf421",
-    description: "A nearly complete public mint with primary revenue split enforced in contract.",
-    minted: 195,
-    supply: 200,
-    price: "Free",
-    maxWallet: 1,
-    status: "Nearly minted out",
-    endsIn: "06h 10m",
-    deployedAt: "Nest deployment",
-    metadataCid: "ipfs://bafy-platform-settlement",
-    art: 2
-  }
-];
+let platformCollections = [];
 
 const integrationActivity = [
   ["Indexer", "CollectionCreated event queued", "Waiting for real RPC polling"],
@@ -313,6 +261,16 @@ function artStyle(index, prop = "--art") {
 }
 
 function collectionArtStyle(collection, prop = "--art") {
+  if (collection.image) return `${prop}: url('${collection.image}')`;
+  return artStyle(collection.art || 0, prop);
+}
+
+function ipfsUrl(uri) {
+  if (!uri) return "";
+  return uri.startsWith("ipfs://") ? `https://ipfs.io/ipfs/${uri.slice(7)}` : uri;
+}
+
+function platformArtStyle(collection, prop = "--art") {
   if (collection.image) return `${prop}: url('${collection.image}')`;
   return artStyle(collection.art || 0, prop);
 }
@@ -423,13 +381,21 @@ function tickerSection() {
 }
 
 function liveMintsSection() {
-  return `<section class="section"><div class="section-head"><div><div class="kicker">Live Nest mints</div><h2>Collections deployed through Nest.</h2></div><p>These drops represent collections created on Nest. Buyers can open each mint page, select quantity, connect wallet, and mint once live contract calls are wired.</p></div><div class="mint-list">${platformCollections.map(platformRow).join("")}</div></section>`;
+  return `<section class="section"><div class="section-head"><div><div class="kicker">Upcoming Nest mints</div><h2>Real launches from the Nest database.</h2></div><p>Only collections prepared or deployed through Nest appear here. Mint availability follows database and onchain deployment status.</p></div>${platformCollections.length ? `<div class="mint-list">${platformCollections.map(platformRow).join("")}</div>` : platformEmptyState()}</section>`;
+}
+
+function platformEmptyState() {
+  const copy = state.backend === "online"
+    ? "No creator has published an upcoming or live Nest mint yet. The first database-backed launch will appear here automatically."
+    : "Nest could not reach the collection database. Upcoming mints will return automatically when the API reconnects.";
+  return `<article class="panel opensea-empty"><div><span class="state-label">Database-backed mints</span><h3>No upcoming mints available</h3><p>${copy}</p></div><div class="actions"><a class="btn primary" href="#/launch">Launch a collection</a><button class="btn ghost" type="button" onclick="checkBackend()">Refresh mints</button></div></article>`;
 }
 
 function platformRow(c) {
   const price = c.price === "Free" ? "Free" : `${c.price} ETH`;
   const progress = Math.round(c.minted / c.supply * 100);
-  return `<article class="collection-row"><a class="row-art" style="${artStyle(c.art || 0)}" href="#/mint/${c.id}"></a><div><span class="state-label">${c.status}</span><h3>${c.name}</h3><p>${c.description}</p><div class="row-meta"><span>${c.creator}</span><span>${price}</span><span>${c.minted}/${c.supply} minted</span><span>${c.endsIn} left</span></div><div class="progress"><span style="width:${progress}%"></span></div></div><div class="row-links"><a href="#/mint/${c.id}">Open mint page</a><a href="${explorerAddress(c.contractAddress)}" target="_blank" rel="noopener noreferrer">View contract</a></div></article>`;
+  const contractLink = c.contractAddress ? `<a href="${explorerAddress(c.contractAddress)}" target="_blank" rel="noopener noreferrer">View contract</a>` : `<span>Contract pending</span>`;
+  return `<article class="collection-row"><a class="row-art" style="${platformArtStyle(c)}" href="#/mint/${c.id}"></a><div><span class="state-label">${c.status}</span><h3>${c.name}</h3><p>${c.description}</p><div class="row-meta"><span>${c.creator}</span><span>${price}</span><span>${c.minted}/${c.supply} minted</span><span>${c.endsIn}</span></div><div class="progress"><span style="width:${progress}%"></span></div></div><div class="row-links"><a href="#/mint/${c.id}">Open mint page</a>${contractLink}</div></article>`;
 }
 
 function collectionRow(c) {
@@ -453,15 +419,11 @@ function processSection() {
 }
 
 function chainSection() {
-  return `<section class="section editorial-split"><div><div class="kicker">Robinhood Chain</div><h2>Creator-owned ERC-721 contracts on an EVM network.</h2><p>Deploy standard ERC-721 metadata contracts, pay gas in ETH, verify bytecode on the public explorer, and expose metadata for OpenSea indexing when marketplace support is available.</p></div><div clas…3913 tokens truncated…div></div><span>${a[2]}</span></div>`).join("");
+  return `<section class="section editorial-split"><div><div class="kicker">Robinhood Chain</div><h2>Creator-owned ERC-721 contracts on an EVM network.</h2><p>Deploy standard ERC-721 metadata contracts, pay gas in ETH, verify bytecode on the public explorer, and expose metadata for OpenSea indexing when marketplace support is available.</p></div><div class="technical-table"><div><span>Network</span><strong>${ACTIVE_NETWORK.name}</strong></div><div><span>Chain ID</span><strong>${ACTIVE_NETWORK.chainId}</strong></div><div><span>RPC</span><strong>${ACTIVE_NETWORK.rpcUrl}</strong></div><div><span>Explorer</span><strong>${ACTIVE_NETWORK.explorer}</strong></div><div><span>Standard</span><strong>ERC-721 + ERC-2981 signaling</strong></div></div></section>`;
 }
 
-function collectionPage(address) {
-  const c = openseaCollections.find((item) => item.id.toLowerCase() === address.toLowerCase());
-  if (!c) {
-    return shell(`<main class="page"><section class="section">${openseaEmptyState("Collection not available from OpenSea", "This route only renders live OpenSea-backed Robinhood Chain collection records. Add an OpenSea API key and supported chain slug, then hydrate this page from the collection or contract endpoint.")}</section></main>`);
-  }
-  return shell(`<main class="page mint-layout market-detail-layout"><section class="panel market-detail-panel"><div class="market-detail-identity"><div class="collection-avatar hero-avatar opensea-art" style="${collectionArtStyle(c)}"></div><div><span class="state-label">${c.verified ? "OpenSea verified" : "OpenSea Robinhood Chain"}</span><h1>${c.name}</h1><p>${c.description}</p></div></div><div class="section grid cols-3 market-samples">${[0,1,2,3,4,5].map(i=>`<div class="nft-art thumb-large" style="${artStyle((c.art || 0) + i)}"></div>`).join("")}</div></section><aside class="panel mint-module"><span class="state-label">Marketplace data</span><h2>${c.name}</h2><p>OpenSea discovery record for Robinhood Chain.</p>${deployRow("Source", c.creator || "OpenSea marketplace")}${deployRow("Floor", c.floor)}${deployRow("1d movement", `<span class="metric-${c.changeType}">${c.change}</span>`)}${deployRow("Status", c.status)}${deployRow("OpenSea", c.openseaUrl ? `<a href="${c.openseaUrl}" target="_blank" rel="noopener noreferrer">Open collection search</a>` : "OpenSea URL unavailable")}${deployRow("Contract", c.contractAddress ? `<a href="${explorerAddress(c.contractAddress)}" target="_blank" rel="noopener noreferrer">${c.contractAddress}</a>` : "Pending API hydration")}<div class="divider"></div><h3>Recent market activity</h3>${activityList()}<h3>Disclosures</h3><p>Thumbnails are shown at avatar size because the current source is the OpenSea ranking screenshot. Live API images should replace these when connected.</p></aside></main>`);
+function economicsSection() {
+  return `<section class="section economics" data-counter-section><div><div clas…4178 tokens truncated…"}</span><h1>${c.name}</h1><p>${c.description}</p></div></div><div class="section grid cols-3 market-samples">${[0,1,2,3,4,5].map(i=>`<div class="nft-art thumb-large" style="${artStyle((c.art || 0) + i)}"></div>`).join("")}</div></section><aside class="panel mint-module"><span class="state-label">Marketplace data</span><h2>${c.name}</h2><p>OpenSea discovery record for Robinhood Chain.</p>${deployRow("Source", c.creator || "OpenSea marketplace")}${deployRow("Floor", c.floor)}${deployRow("1d movement", `<span class="metric-${c.changeType}">${c.change}</span>`)}${deployRow("Status", c.status)}${deployRow("OpenSea", c.openseaUrl ? `<a href="${c.openseaUrl}" target="_blank" rel="noopener noreferrer">Open collection search</a>` : "OpenSea URL unavailable")}${deployRow("Contract", c.contractAddress ? `<a href="${explorerAddress(c.contractAddress)}" target="_blank" rel="noopener noreferrer">${c.contractAddress}</a>` : "Pending API hydration")}<div class="divider"></div><h3>Recent market activity</h3>${activityList()}<h3>Disclosures</h3><p>Thumbnails are shown at avatar size because the current source is the OpenSea ranking screenshot. Live API images should replace these when connected.</p></aside></main>`);
 }
 
 function deployRow(a,b) {
@@ -502,17 +464,19 @@ async function checkBackend() {
     await loadBackendCollections();
   } catch (error) {
     state.backend = "offline";
-    state.backendMessage = "Backend offline; demo data remains available";
+    state.backendMessage = "Backend offline; upcoming mints are temporarily unavailable";
+    platformCollections = [];
   }
   render();
 }
 
 async function loadBackendCollections() {
-  const result = await apiRequest("/collections?status=LIVE&take=24");
+  const result = await apiRequest("/collections?status=UPCOMING&take=24");
+  platformCollections = [];
   if (!Array.isArray(result.items) || !result.items.length) return;
   platformCollections = result.items.map((c, index) => ({
     id: c.id,
-    contractAddress: c.contractAddress || "Pending deployment",
+    contractAddress: c.contractAddress || c.deployments?.[0]?.contractAddress || "",
     name: c.name,
     creator: c.creatorName || "Nest creator",
     creatorAddress: c.creatorWallet,
@@ -521,12 +485,28 @@ async function loadBackendCollections() {
     supply: c.maxSupply,
     price: weiToEth(c.mintPriceWei),
     maxWallet: c.maxPerWallet,
-    status: c.status === "LIVE" ? "Live mint" : c.status,
-    endsIn: c.mintEndAt ? new Date(c.mintEndAt).toLocaleDateString() : "Open",
+    status: collectionStatusLabel(c.status),
+    canMint: c.status === "LIVE" && Boolean(c.contractAddress || c.deployments?.[0]?.contractAddress),
+    chainName: c.chainName,
+    endsIn: mintSchedule(c),
     deployedAt: "Nest deployment",
     metadataCid: c.metadataBaseUri || "Metadata pending",
+    image: ipfsUrl(c.assets?.[0]?.ipfsUri || c.metadataItems?.[0]?.imageUri),
     art: index % ARTWORK.length
   }));
+}
+
+function collectionStatusLabel(status) {
+  return ({ STORAGE_READY: "Artwork ready", READY_TO_DEPLOY: "Upcoming mint", DEPLOYING: "Deployment pending", LIVE: "Live mint" })[status] || status;
+}
+
+function mintSchedule(collection) {
+  const now = Date.now();
+  const starts = collection.mintStartAt ? new Date(collection.mintStartAt) : null;
+  const ends = collection.mintEndAt ? new Date(collection.mintEndAt) : null;
+  if (starts && starts.getTime() > now) return `Starts ${starts.toLocaleString()}`;
+  if (ends) return `Ends ${ends.toLocaleString()}`;
+  return collection.status === "LIVE" ? "Open mint" : "Schedule pending";
 }
 
 function ethToWei(value) {
