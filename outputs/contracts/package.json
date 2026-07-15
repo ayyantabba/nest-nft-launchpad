@@ -1,0 +1,13 @@
+{
+  "name": "nest-contracts",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "compile": "node compile.cjs"
+  },
+  "devDependencies": {
+    "@openzeppelin/contracts": "5.0.2",
+    "solc": "0.8.24"
+  }
+}
+
