@@ -12,8 +12,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 COPY package*.json ./
 COPY prisma ./prisma
-RUN npm ci --omit=dev && npm cache clean --force
+COPY --from=build /app/node_modules ./node_modules
+RUN npm prune --omit=dev --ignore-scripts && npm cache clean --force
 COPY --from=build /app/dist ./dist
 USER node
 EXPOSE 8787
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
+CMD ["node", "dist/server.js"]
+
