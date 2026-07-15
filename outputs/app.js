@@ -22,9 +22,7 @@ const NETWORKS = {
 };
 
 const ACTIVE_NETWORK = NETWORKS.testnet;
-const DEFAULT_API_BASE = ["127.0.0.1", "localhost"].includes(location.hostname)
-  ? "http://127.0.0.1:8787/v1"
-  : `${location.origin}/api/v1`;
+const DEFAULT_API_BASE = "https://nest-nft-launchpad-production.up.railway.app/v1";
 const API_BASE = window.NEST_API_URL || localStorage.getItem("nestApiUrl") || DEFAULT_API_BASE;
 const API_ORIGIN = API_BASE.replace(/\/v1\/?$/, "");
 
@@ -432,90 +430,7 @@ function economicsSection() {
 }
 
 function explorePreviewSection() {
-  return `<section class="section"><div class="section-head"><div><div class="kicker">Explore collections</div><h2>Robinhood collections trading on OpenSea.</h2></div><p>Floor and one-day movement are seeded from the visible OpenSea ranking list. Live floor, volume, listing, and activity sync belongs in the server OpenSea adapter.</p></div>${openseaCollections.length ? `<div class="grid gallery-grid">${openseaCollections.map(card).join("")}</div>` : openseaEmptyState("OpenSea discovery is waiting for indexed data", "No real Robinhood Chain NFT collection records were found publicly, so the app is no longer displaying sample collections.")}</section>`;
-}
-
-function card(c) {
-  return `<article class="card market-card opensea-card"><div class="opensea-card-head"><a class="collection-avatar opensea-art" style="${collectionArtStyle(c)}" href="#/collection/${c.id}" aria-label="${c.name}"></a><div><span class="state-label">${c.verified ? "OpenSea verified" : "OpenSea"}</span><h3>${c.name}</h3><p>${c.status}</p></div></div><div class="card-metrics"><div><span>Floor</span><strong>${c.floor}</strong></div><div><span>1d</span><strong class="metric-${c.changeType}">${c.change}</strong></div></div><div class="opensea-card-actions"><a class="market-link" href="#/collection/${c.id}">Details</a><a class="market-link" href="${c.openseaUrl}" target="_blank" rel="noopener noreferrer">OpenSea</a></div></article>`;
-}
-
-function launchPage() {
-  const steps = ["Identity", "Artwork", "Metadata", "Configuration", "Storage", "Contract preview", "Deploy"];
-  return shell(`<main class="page app-layout"><aside class="side panel">${steps.map((s,i)=>`<button class="${state.launchStep === i + 1 ? "active" : ""}" onclick="setStep(${i+1})">${String(i+1).padStart(2,"0")} ${s}</button>`).join("")}</aside><section>${state.notice ? `<div class="notice ${state.notice.toLowerCase().includes("failed") ? "error" : "success"}">${state.notice}</div>` : ""}${launchStep()}</section></main>`);
-}
-
-function launchStep() {
-  const n = state.launchStep;
-  if (n === 1) return stepIdentity();
-  if (n === 2) return stepArtwork();
-  if (n === 3) return stepMetadata();
-  if (n === 4) return stepConfiguration();
-  if (n === 5) return stepStorage();
-  if (n === 6) return stepContractPreview();
-  return stepDeploy();
-}
-
-function stepFrame(kicker, title, body, next = true) {
-  return `<div class="section-head"><div><div class="kicker">${kicker}</div><h2>${title}</h2></div></div>${body}<div class="flow-actions"><button class="btn ghost" onclick="saveDraft()">Save draft</button>${state.launchStep > 1 ? `<button class="btn ghost" onclick="setStep(${state.launchStep - 1})">Back</button>` : ""}${next ? `<button class="btn primary" onclick="continueLaunch()">Continue</button>` : ""}</div>`;
-}
-
-function field(label, key, type = "text", cls = "") {
-  const value = state.launch[key] ?? "";
-  if (type === "textarea") return `<div class="field ${cls}"><label>${label}</label><textarea oninput="setLaunch('${key}', this.value)">${value}</textarea></div>`;
-  return `<div class="field ${cls}"><label>${label}</label><input type="${type}" value="${value}" oninput="setLaunch('${key}', this.value)" /></div>`;
-}
-
-function stepIdentity() {
-  return stepFrame("Step 01", "Collection identity", `<div class="panel form-grid">${field("Collection name","name")}${field("Symbol","symbol")}${field("Description","description","textarea","full")}${field("Creator display name","creatorName")}${field("Creator wallet","creatorWallet")}${field("Website","website")}${field("X account","x")}${field("Telegram or Discord","social")}<div class="field"><label>Collection avatar</label><input type="file" accept="image/png,image/jpeg,image/webp,image/gif"></div><div class="field"><label>Collection banner</label><input type="file" accept="image/png,image/jpeg,image/webp,image/gif"></div></div>`);
-}
-
-function stepArtwork() {
-  return stepFrame("Step 02", "Artwork", `<div class="grid cols-2"><div class="panel upload-zone"><div><h3>Upload artwork</h3><p class="artist-rec"><a href="https://frontman-plays.xyz" target="_blank" rel="noopener noreferrer">Don’t have your artwork? Hire our top artist</a></p><p>Supports PNG, JPEG, WEBP, GIF, optional animation/video where compatible, and ZIP bulk upload. Production upload validates file type and size on both client and server.</p><input type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,model/gltf-binary" onchange="uploadArtwork(this.files)"></div></div><div class="panel"><h3>Edition types</h3><table class="table"><tr><th>Type</th><th>Status</th></tr><tr><td>Single edition</td><td>Ready</td></tr><tr><td>Open edition</td><td>Ready</td></tr><tr><td>Repeated artwork</td><td>Ready</td></tr><tr><td>Unique files</td><td>Ready</td></tr><tr><td>ZIP bulk upload</td><td>Backend connected</td></tr></table></div></div>`);
-}
-
-function stepMetadata() {
-  return stepFrame("Step 03", "Metadata", `<div class="grid cols-2"><div class="panel form-grid">${field("Automatic NFT name pattern","name")}${field("Collection description","description","textarea","full")}<div class="field"><label>Trait type</label><input value="Background"></div><div class="field"><label>Trait value</label><input value="Lime"></div><div class="field"><label>External URL</label><input value="${state.launch.website}"></div><div class="field"><label>Background color</label><input value="#C7F000"></div><div class="field full"><label>Bulk CSV trait import</label><input type="file" accept=".csv"></div></div><div class="panel"><h3>Standards-compatible JSON</h3><pre class="code">${metadataJson()}</pre><button class="btn ghost">Download metadata backup</button></div></div>`);
-}
-
-function metadataJson() {
-  return JSON.stringify({
-    name: `${state.launch.name} #1`,
-    description: state.launch.description,
-    image: "ipfs://IMAGE_CID/1.png",
-    external_url: state.launch.website,
-    attributes: [{ trait_type: "Background", value: "Lime" }]
-  }, null, 2);
-}
-
-function stepConfiguration() {
-  return stepFrame("Step 04", "Collection configuration", `<div class="panel form-grid">${field("Total supply","supply","number")}${field("Mint price in ETH","price")}${field("Maximum mint per wallet","maxWallet","number")}${field("Maximum mint per transaction","maxTx","number")}<div class="field"><label>Mint start time</label><input type="datetime-local"></div><div class="field"><label>Optional mint end time</label><input type="datetime-local"></div><div class="field"><label>Public mint enabled</label><select><option>Enabled</option><option>Disabled</option></select></div><div class="field"><label>Allowlist phase</label><select><option>Disabled</option><option>Enabled</option></select></div><div class="field"><label>Allowlist mint price</label><input value="0.012"></div><div class="field"><label>Allowlist wallet limits</label><input value="1"></div><div class="field"><label>Reveal</label><select><option>Immediate reveal</option><option>Delayed reveal</option></select></div>${field("Creator payout wallet","payout")}${field("Contract owner wallet","owner")}<div class="field"><label>Secondary royalty percentage</label><input value="5"></div><div class="field full"><strong>Mandatory Nest fee: 5% of primary mint revenue</strong></div></div>`);
-}
-
-function stepStorage() {
-  return stepFrame("Step 05", "Storage verification", `<div class="panel"><p>Production deployment must upload artwork and metadata through a server-side IPFS provider adapter. Credentials stay server-side.</p><pre class="code">StorageProvider {
-  uploadFile()
-  uploadDirectory()
-  uploadJSON()
-  pinCID()
-  verifyCID()
-}</pre><table class="table"><tr><th>Requirement</th><th>Status</th></tr><tr><td>Artwork CID verified</td><td>Backend required</td></tr><tr><td>Metadata CID verified</td><td>Backend required</td></tr><tr><td>Metadata image URI resolves</td><td>Backend required</td></tr><tr><td>Manifest saved</td><td>Backend required</td></tr></table></div>`);
-}
-
-function stepContractPreview() {
-  return stepFrame("Step 06", "Contract preview", `<div class="panel technical-table"><div><span>Network</span><strong>${ACTIVE_NETWORK.name}</strong></div><div><span>Chain ID</span><strong>${ACTIVE_NETWORK.chainId}</strong></div><div><span>Contract type</span><strong>RobinhoodNFTCollection ERC-721</strong></div><div><span>Collection owner</span><strong>${state.launch.owner}</strong></div><div><span>Creator payout wallet</span><strong>${state.launch.payout}</strong></div><div><span>Supply</span><strong>${state.launch.supply}</strong></div><div><span>Mint price</span><strong>${state.launch.price} ETH</strong></div><div><span>Nest fee</span><strong>5% of primary mint revenue</strong></div><div><span>Metadata base URI</span><strong>ipfs://METADATA_CID/</strong></div><div><span>Estimated gas</span><strong>Requires Viem simulation</strong></div><div><span>Wallet balance</span><strong>Requires connected wallet read</strong></div></div>`);
-}
-
-function stepDeploy() {
-  const deploySettings = [
-    ["Wallet connected", state.readiness, "Creator wallet must connect before Nest can prepare a deploy transaction."],
-    ["Correct Robinhood Chain network", state.readiness, `Wallet chain ID must match ${ACTIVE_NETWORK.chainId} before deployment.`],
-    ["Valid connected address", state.readiness, "Nest stores this address as deployer, owner, and session identity unless changed."],
-    ["Enough ETH for gas", state.readiness, "Creator pays network gas separately from mint revenue and Nest fees."],
-    ["Artwork uploaded to IPFS", state.readiness, "Images must be pinned before contract metadata can point to permanent URIs."],
-    ["Metadata verified", state.readiness, "Token JSON, image links, and contractURI should resolve before deployment."],
-    ["Collection settings valid", state.readiness, "Supply, price, wallet limits, payout wallet, and royalty values must be final."]
-  ];
-  return stepFrame("Step 07", "Deploy", `<div class="grid cols-2"><div class="panel"><h3>Deploy settings</h3><table class="table deploy-docs-table"><tr><th>Setting</th><th>Status</th><th>Docs</th></tr>${deploySettings.map(([setting,status,docs])=>`<tr><td>${setting}</td><td>${status}</td><td>${docs}</td></tr>`).join("")}</table><button class="btn primary" onclick="runReadiness()">Run readiness check</button><button class="btn ghost" onclick="addNetwork()">Add Robinhood Chain</button><button class="btn ghost" onclick="switchNetwork()">Switch Network</button></div><div class="panel"><h3>Transaction states</h3>${txStates()}<p class="warning">Smart-contract deployment is permanent. Review supply, mint price, payout wallet, metadata, ownership, and Nest fee before confirming.</p><button class="btn primary" onclick="showDeployBlocked()">Prepare wallet transaction</button><p>${state.deploymentState}</p></div></div>`, false);
+  return `<section class="section"><div class="section-head"><div><div class="kicker">Explore collections</div><h2>Robinhood collections trading on OpenSea.</h2></div><p>Floor and one-day movement are seeded from the visible OpenSea ranking list. Live floor, volume, listing, and activity sync belongs in the server OpenSea adapter.</p></div>${openseaCollections.length ? `<div class="grid gallery-grid">${openseaCollections.map(card).join("")}</div>` : openseaEmptyState("OpenSea discovery is waiting for indexed data", "No real Robinhood Chain NFT collection records were found publicly, s…2384 tokens truncated…ap(([setting,status,docs])=>`<tr><td>${setting}</td><td>${status}</td><td>${docs}</td></tr>`).join("")}</table><button class="btn primary" onclick="runReadiness()">Run readiness check</button><button class="btn ghost" onclick="addNetwork()">Add Robinhood Chain</button><button class="btn ghost" onclick="switchNetwork()">Switch Network</button></div><div class="panel"><h3>Transaction states</h3>${txStates()}<p class="warning">Smart-contract deployment is permanent. Review supply, mint price, payout wallet, metadata, ownership, and Nest fee before confirming.</p><button class="btn primary" onclick="showDeployBlocked()">Prepare wallet transaction</button><p>${state.deploymentState}</p></div></div>`, false);
 }
 
 function txStates() {
@@ -817,3 +732,4 @@ if (localDraft) {
 }
 render();
 checkBackend();
+
