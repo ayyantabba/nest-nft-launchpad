@@ -83,10 +83,18 @@ app.post("/v1/collections", { preHandler: [app.authenticate] }, async (request, 
 });
 
 app.get("/v1/collections", async (request) => {
-  const query = z.object({ status: z.string().optional(), creator: z.string().optional(), take: z.coerce.number().min(1).max(100).default(24), cursor: z.string().optional() }).parse(request.query);
+  const query = z.object({ status: z.enum(["UPCOMING", "LIVE", "ENDED"]).default("LIVE"), creator: z.string().optional(), take: z.coerce.number().min(1).max(100).default(24), cursor: z.string().optional() }).parse(request.query);
+  const status = query.status === "UPCOMING"
+    ? { in: ["STORAGE_READY", "READY_TO_DEPLOY", "DEPLOYING", "LIVE"] }
+    : query.status;
   const rows = await db.collection.findMany({
-    where: { status: query.status as never, creatorWallet: query.creator }, take: query.take + 1,
-    ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}), orderBy: { createdAt: "desc" }, include: { deployments: { take: 1, orderBy: { createdAt: "desc" } } }
+    where: { status: status as never, creatorWallet: query.creator }, take: query.take + 1,
+    ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}), orderBy: { createdAt: "desc" },
+    include: {
+      assets: { where: { status: "PINNED" }, take: 1, orderBy: { createdAt: "asc" } },
+      metadataItems: { take: 1, orderBy: { tokenId: "asc" } },
+      deployments: { take: 1, orderBy: { createdAt: "desc" } }
+    }
   });
   return { items: rows.slice(0, query.take), nextCursor: rows.length > query.take ? rows[query.take]?.id : null };
 });
@@ -218,3 +226,4 @@ app.get("/v1/dashboard/creator", { preHandler: [app.authenticate] }, async (requ
 const shutdown = async () => { await app.close(); await db.$disconnect(); process.exit(0); };
 process.on("SIGINT", shutdown); process.on("SIGTERM", shutdown);
 await app.listen({ port: env.PORT, host: env.HOST });
+
