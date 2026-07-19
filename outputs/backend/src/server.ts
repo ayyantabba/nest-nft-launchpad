@@ -5,9 +5,11 @@ import jwt from "@fastify/jwt";
 import multipart from "@fastify/multipart";
 import rateLimit from "@fastify/rate-limit";
 import { randomBytes } from "node:crypto";
+import { createReadStream, existsSync, statSync } from "node:fs";
+import { extname, join, normalize } from "node:path";
 import { createPublicClient, decodeEventLog, encodeFunctionData, getAddress, http, verifyMessage } from "viem";
 import { z, ZodError } from "zod";
-import type { FastifyRequest } from "fastify";
+import type { FastifyReply, FastifyRequest } from "fastify";
 import { env } from "./config.js";
 import { db } from "./db.js";
 import "./types.js";
@@ -369,6 +371,44 @@ app.get("/v1/dashboard/creator", { preHandler: [app.authenticate] }, async (requ
   const collections = await db.collection.findMany({ where: { creatorWallet: request.user.walletAddress }, include: { mints: { where: { status: "CONFIRMED" } }, deployments: { take: 1, orderBy: { createdAt: "desc" } } } });
   const safeCollections = collections.map((collection) => ({ ...collection, mints: collection.mints.map((mint) => ({ ...mint, blockNumber: mint.blockNumber?.toString() ?? null })) }));
   return { collections: safeCollections, totals: { collections: collections.length, minted: collections.reduce((n, c) => n + c.mintedSupply, 0), revenueWei: collections.flatMap((c) => c.mints).reduce((n, m) => n + BigInt(m.creatorAmountWei), 0n).toString() } };
+});
+
+const publicRoot = join(process.cwd(), "public");
+const contentTypes: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "application/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".gif": "image/gif",
+  ".svg": "image/svg+xml",
+  ".glb": "model/gltf-binary"
+};
+
+function sendFrontendFile(reply: FastifyReply, requestedPath: string) {
+  const cleanPath = normalize(requestedPath).replace(/^(\.\.(\\|\/|$))+/, "");
+  const filePath = join(publicRoot, cleanPath);
+  if (!filePath.startsWith(publicRoot) || !existsSync(filePath) || !statSync(filePath).isFile()) return false;
+  const extension = extname(filePath).toLowerCase();
+  reply
+    .header("cache-control", extension === ".html" ? "no-cache" : "public, max-age=86400")
+    .type(contentTypes[extension] || "application/octet-stream")
+    .send(createReadStream(filePath));
+  return true;
+}
+
+app.get("/", async (_request, reply) => {
+  if (!sendFrontendFile(reply, "index.html")) return reply.code(404).send({ error: "FRONTEND_NOT_BUILT" });
+});
+
+app.get("/*", async (request, reply) => {
+  const requestedPath = decodeURIComponent(request.url.split("?", 1)[0] || "").replace(/^\/+/, "");
+  if (sendFrontendFile(reply, requestedPath)) return;
+  if (requestedPath.startsWith("v1/") || requestedPath === "health") return reply.code(404).send({ error: "NOT_FOUND" });
+  if (!sendFrontendFile(reply, "index.html")) return reply.code(404).send({ error: "FRONTEND_NOT_BUILT" });
 });
 
 const shutdown = async () => { await app.close(); await db.$disconnect(); process.exit(0); };
