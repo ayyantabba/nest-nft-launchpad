@@ -393,22 +393,22 @@ function sendFrontendFile(reply: FastifyReply, requestedPath: string) {
   const filePath = join(publicRoot, cleanPath);
   if (!filePath.startsWith(publicRoot) || !existsSync(filePath) || !statSync(filePath).isFile()) return false;
   const extension = extname(filePath).toLowerCase();
-  reply
+  return reply
     .header("cache-control", extension === ".html" ? "no-cache" : "public, max-age=86400")
     .type(contentTypes[extension] || "application/octet-stream")
     .send(createReadStream(filePath));
-  return true;
 }
 
 app.get("/", async (_request, reply) => {
-  if (!sendFrontendFile(reply, "index.html")) return reply.code(404).send({ error: "FRONTEND_NOT_BUILT" });
+  return sendFrontendFile(reply, "index.html") || reply.code(404).send({ error: "FRONTEND_NOT_BUILT" });
 });
 
 app.get("/*", async (request, reply) => {
   const requestedPath = decodeURIComponent(request.url.split("?", 1)[0] || "").replace(/^\/+/, "");
-  if (sendFrontendFile(reply, requestedPath)) return;
+  const staticFile = sendFrontendFile(reply, requestedPath);
+  if (staticFile) return staticFile;
   if (requestedPath.startsWith("v1/") || requestedPath === "health") return reply.code(404).send({ error: "NOT_FOUND" });
-  if (!sendFrontendFile(reply, "index.html")) return reply.code(404).send({ error: "FRONTEND_NOT_BUILT" });
+  return sendFrontendFile(reply, "index.html") || reply.code(404).send({ error: "FRONTEND_NOT_BUILT" });
 });
 
 const shutdown = async () => { await app.close(); await db.$disconnect(); process.exit(0); };
