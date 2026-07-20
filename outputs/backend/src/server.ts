@@ -12,7 +12,7 @@ import { z, ZodError } from "zod";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { env } from "./config.js";
 import { db } from "./db.js";
-import { createJsonDirectoryForm, METADATA_DIRECTORY } from "./pinata.js";
+import { createJsonDirectoryForm } from "./pinata.js";
 import "./types.js";
 
 const app = Fastify({ logger: env.NODE_ENV === "development" ? { transport: { target: "pino-pretty" } } : true });
@@ -244,7 +244,7 @@ app.post("/v1/storage/metadata", { preHandler: [app.authenticate] }, async (requ
   const files = body.items.map((item) => ({ filename: item.tokenId + ".json", content: { name: item.name, description: item.description, image: item.image, external_url: body.externalUrl, attributes: item.attributes } }));
   const metadataCid = await pinJsonDirectory(files, ownership.collection.name + "-metadata");
   const contractCid = await pinJson({ name: ownership.collection.name, description: ownership.collection.description, image: body.items[0]?.image, external_link: body.externalUrl, seller_fee_basis_points: ownership.collection.royaltyBps, fee_recipient: ownership.collection.creatorPayoutWallet }, ownership.collection.symbol + "-contract.json");
-  const metadataBaseUri = "ipfs://" + metadataCid + "/" + METADATA_DIRECTORY + "/";
+  const metadataBaseUri = "ipfs://" + metadataCid + "/";
   const contractUri = "ipfs://" + contractCid;
   await db.$transaction([
     ...body.items.map((item) => db.metadataItem.upsert({
