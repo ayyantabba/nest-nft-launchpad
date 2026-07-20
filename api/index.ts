@@ -1,13 +1,24 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from '../src/app.module';
+const { NestFactory } = require('@nestjs/core');
+const { ExpressAdapter } = require('@nestjs/platform-express');
+const express = require('express');
 
-let app: any;
+let app;
+const server = express();
 
-export default async function handler(req: any, res: any) {
+const createNestApp = async (expressInstance) => {
   if (!app) {
-    app = await NestFactory.create(AppModule);
+    // Dynamic import to handle dist output after build
+    const { AppModule } = require('../dist/src/app.module');
+    app = await NestFactory.create(
+      AppModule,
+      new ExpressAdapter(expressInstance)
+    );
     await app.init();
   }
-  const instance = app.getHttpAdapter().getInstance();
-  return instance(req, res);
-}
+  return app;
+};
+
+module.exports = async (req, res) => {
+  await createNestApp(server);
+  server(req, res);
+};
