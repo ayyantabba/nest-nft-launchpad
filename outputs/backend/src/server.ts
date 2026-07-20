@@ -12,6 +12,7 @@ import { z, ZodError } from "zod";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { env } from "./config.js";
 import { db } from "./db.js";
+import { createJsonDirectoryForm, METADATA_DIRECTORY } from "./pinata.js";
 import "./types.js";
 
 const app = Fastify({ logger: env.NODE_ENV === "development" ? { transport: { target: "pino-pretty" } } : true });
@@ -77,13 +78,19 @@ app.setErrorHandler((error, _request, reply) => {
   app.log.error(error);
   const apiError = error as { statusCode?: number; message?: string };
   const statusCode = apiError.statusCode && apiError.statusCode >= 400 ? apiError.statusCode : 500;
-  return reply.code(statusCode).send({ error: statusCode < 500 ? apiError.message : "INTERNAL_ERROR" });
+  const publicOperationalErrors = new Set(["FACTORY_NOT_CONFIGURED", "IPFS_NOT_CONFIGURED"]);
+  const publicMessage = apiError.message && publicOperationalErrors.has(apiError.message)
+    ? apiError.message
+    : statusCode < 500 ? apiError.message : "INTERNAL_ERROR";
+  return reply.code(statusCode).send({ error: publicMessage });
 });
 
-app.get("/health", async () => {
+const healthHandler = async () => {
   await db.$queryRawUnsafe("SELECT 1");
   return { status: "ok", service: "nest-api", environment: env.NODE_ENV, integrations: { database: true, pinata: env.IPFS_PROVIDER === "pinata" && Boolean(env.PINATA_JWT), testnetFactory: Boolean(env.FACTORY_TESTNET_ADDRESS), mainnetEnabled: env.CONFIRM_MAINNET_DEPLOYMENT === "true" && Boolean(env.FACTORY_MAINNET_ADDRESS), opensea: Boolean(env.OPENSEA_API_KEY && env.OPENSEA_CHAIN_SLUG) } };
-});
+};
+app.get("/health", healthHandler);
+app.get("/v1/health", healthHandler);
 
 app.post("/v1/auth/nonce", async (request) => {
   const body = z.object({ walletAddress: address }).parse(request.body);
@@ -192,10 +199,7 @@ async function pinJson(content: unknown, filename: string) {
 
 async function pinJsonDirectory(items: Array<{ filename: string; content: unknown }>, name: string) {
   if (env.IPFS_PROVIDER !== "pinata" || !env.PINATA_JWT) throw new Error("IPFS_NOT_CONFIGURED");
-  const form = new FormData();
-  for (const item of items) form.append("file", new Blob([JSON.stringify(item.content)], { type: "application/json" }), item.filename);
-  form.append("pinataMetadata", JSON.stringify({ name }));
-  form.append("pinataOptions", JSON.stringify({ cidVersion: 1, wrapWithDirectory: true }));
+  const form = createJsonDirectoryForm(items, name);
   const response = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", { method: "POST", headers: { authorization: "Bearer " + env.PINATA_JWT }, body: form });
   const result = await response.json() as { IpfsHash?: string; error?: string };
   if (!response.ok || !result.IpfsHash) throw new Error(result.error || "IPFS_METADATA_UPLOAD_FAILED");
@@ -240,7 +244,7 @@ app.post("/v1/storage/metadata", { preHandler: [app.authenticate] }, async (requ
   const files = body.items.map((item) => ({ filename: item.tokenId + ".json", content: { name: item.name, description: item.description, image: item.image, external_url: body.externalUrl, attributes: item.attributes } }));
   const metadataCid = await pinJsonDirectory(files, ownership.collection.name + "-metadata");
   const contractCid = await pinJson({ name: ownership.collection.name, description: ownership.collection.description, image: body.items[0]?.image, external_link: body.externalUrl, seller_fee_basis_points: ownership.collection.royaltyBps, fee_recipient: ownership.collection.creatorPayoutWallet }, ownership.collection.symbol + "-contract.json");
-  const metadataBaseUri = "ipfs://" + metadataCid + "/";
+  const metadataBaseUri = "ipfs://" + metadataCid + "/" + METADATA_DIRECTORY + "/";
   const contractUri = "ipfs://" + contractCid;
   await db.$transaction([
     ...body.items.map((item) => db.metadataItem.upsert({
