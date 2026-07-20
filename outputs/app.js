@@ -650,7 +650,11 @@ async function loadBackendCollections() {
     status: collectionStatusLabel(c.status), canMint: c.status === "LIVE" && Boolean(c.contractAddress || c.deployments?.[0]?.contractAddress),
     chainName: c.chainName, endsIn: mintSchedule(c), deployedAt: "Nest deployment", metadataCid: c.metadataBaseUri || "Metadata pending",
     metadataBaseUri: c.metadataBaseUri || "", contractUri: c.contractUri || "", txHash: c.txHash || c.deployments?.[0]?.txHash || "",
-    activity: [], image: ipfsUrl(c.assets?.[0]?.ipfsUri || c.metadataItems?.[0]?.imageUri), art: index % ARTWORK.length
+    activity: [],
+    image: c.assets?.[0] && Number(c.assets[0].sizeBytes || 0) < 128
+      ? "./assets/nest-test-artwork.png"
+      : ipfsUrl(c.assets?.[0]?.ipfsUri || c.metadataItems?.[0]?.imageUri),
+    art: index % ARTWORK.length
   }));
   await Promise.all(platformCollections.map(async (collection) => {
     try { const activity = await apiRequest("/collections/" + collection.id + "/activity"); collection.activity = activity.items || []; } catch { collection.activity = []; }
