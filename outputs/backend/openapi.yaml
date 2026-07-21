@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Nest API
-  version: 1.0.0
+  version: 1.1.0
   description: Backend contract for the Nest NFT launchpad.
 servers:
   - url: https://api.nest.example/v1
@@ -12,21 +12,25 @@ components:
   schemas:
     Error:
       type: object
-      properties: { error: { type: string }, details: { type: object } }
+      properties:
+        error: { type: string }
+        details: { type: object }
+        errorId: { type: string, description: Correlation id for 4xx/5xx logs }
     CollectionInput:
       type: object
       required: [name, symbol, description, chainId, chainName, mintCurrency, mintPriceWei, maxSupply, maxPerWallet, royaltyBps, creatorPayoutWallet]
       properties:
-        name: { type: string, maxLength: 100 }
-        symbol: { type: string, maxLength: 12 }
-        description: { type: string, maxLength: 5000 }
-        chainId: { type: integer, examples: [46630] }
-        chainName: { type: string, examples: [Robinhood Chain Testnet] }
-        mintCurrency: { type: string, examples: [ETH] }
+        name: { type: string, maxLength: 100, description: Plain text only; HTML/control characters rejected }
+        symbol: { type: string, maxLength: 12, pattern: '^[A-Za-z0-9._-]+$' }
+        description: { type: string, maxLength: 5000, description: Plain text only; HTML rejected }
+        chainId: { type: integer, enum: [46630, 4663] }
+        chainName: { type: string, enum: [Robinhood Chain Testnet, Robinhood Chain] }
+        mintCurrency: { type: string, const: ETH }
         mintPriceWei: { type: string, pattern: '^\\d+$' }
-        maxSupply: { type: integer, minimum: 1, maximum: 100000 }
-        maxPerWallet: { type: integer, minimum: 1 }
-        royaltyBps: { type: integer, minimum: 0, maximum: 1000 }
+        maxSupply: { type: integer, minimum: 1, maximum: 10000 }
+        maxPerWallet: { type: integer, minimum: 1, description: Must be <= maxSupply }
+        maxPerTransaction: { type: integer, minimum: 1, description: Must be <= maxPerWallet and <= maxSupply }
+        royaltyBps: { type: integer, minimum: 0, maximum: 1000, description: Secondary royalty signal cap 10% }
         creatorPayoutWallet: { type: string }
         websiteUrl: { type: string, format: uri }
         socialUrl: { type: string, format: uri }
@@ -35,8 +39,10 @@ components:
 paths:
   /health:
     get:
-      summary: Health and database check
-      responses: { '200': { description: Healthy } }
+      summary: Live health probes (db, pinata, rpcs, factory bytecode presence)
+      responses:
+        '200': { description: Healthy or degraded with integration flags }
+        '503': { description: Database unavailable }
   /health/storage:
     get:
       summary: Verify server-side IPFS provider authentication
@@ -52,8 +58,17 @@ paths:
       responses: { '200': { description: Message to sign } }
   /auth/verify:
     post:
-      summary: Verify signature and issue session token
+      summary: Verify signature; sets httpOnly nest_session cookie and returns in-memory JWT
       responses: { '200': { description: Authenticated } }
+  /auth/me:
+    get:
+      security: [{ bearerAuth: [] }]
+      summary: Return wallet for cookie or bearer session
+      responses: { '200': { description: Session valid }, '401': { description: Unauthorized } }
+  /auth/logout:
+    post:
+      summary: Clear httpOnly session cookie
+      responses: { '200': { description: Logged out } }
   /collections:
     get:
       summary: List public collections
@@ -74,6 +89,36 @@ paths:
       security: [{ bearerAuth: [] }]
       summary: Update creator-owned draft
       responses: { '200': { description: Updated }, '403': { description: Not owner } }
+  /collections/{id}/activity:
+    parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+    get:
+      summary: List confirmed mint activity
+      responses: { '200': { description: Confirmed mint records } }
+  /collections/{id}/revenue:
+    parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+    get:
+      summary: Read onchain creator and platform accrued balances
+      responses: { '200': { description: Pull-payment revenue state }, '404': { description: Collection not live } }
+  /collections/{id}/revenue/prepare:
+    parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+    post:
+      security: [{ bearerAuth: [] }]
+      summary: Prepare creator or platform withdrawal transaction
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [recipient], properties: { recipient: { type: string, enum: [creator, platform] } } } } }
+      responses: { '200': { description: Unsigned fixed-recipient withdrawal transaction }, '403': { description: Wallet not authorized } }
+  /collections/{id}/revenue/record:
+    parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+    post:
+      security: [{ bearerAuth: [] }]
+      summary: Record a submitted revenue withdrawal
+      responses: { '201': { description: Pending withdrawal record }, '403': { description: Wallet not authorized } }
+  /revenue/confirm:
+    post:
+      security: [{ bearerAuth: [] }]
+      summary: Verify fixed-recipient withdrawal receipt and event
+      responses: { '200': { description: Settled withdrawal }, '409': { description: Receipt or event mismatch } }
   /storage/artwork:
     post:
       security: [{ bearerAuth: [] }]
@@ -104,11 +149,21 @@ paths:
       security: [{ bearerAuth: [] }]
       summary: Record creator-signed deployment transaction
       responses: { '200': { description: Pending deployment } }
+  /deployments/confirm:
+    post:
+      security: [{ bearerAuth: [] }]
+      summary: Verify deployment receipt and CollectionCreated event
+      responses: { '200': { description: Confirmed deployment } }
   /mints/record:
     post:
       security: [{ bearerAuth: [] }]
       summary: Record user-signed mint transaction for indexing
       responses: { '201': { description: Pending mint } }
+  /mints/confirm:
+    post:
+      security: [{ bearerAuth: [] }]
+      summary: Verify mint receipt, payment, events, and token ownership
+      responses: { '200': { description: Confirmed mint and token IDs } }
   /dashboard/creator:
     get:
       security: [{ bearerAuth: [] }]

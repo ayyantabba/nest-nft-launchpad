@@ -3,10 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "compile": "node compile.cjs"
+    "compile": "node compile.cjs",
+    "test": "npm run compile && node test/collection.test.mjs"
   },
   "devDependencies": {
     "@openzeppelin/contracts": "5.0.2",
+    "ganache": "7.9.2",
+    "viem": "2.31.7",
     "solc": "0.8.24"
   }
 }

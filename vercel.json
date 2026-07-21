@@ -1,0 +1,46 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "node scripts/prepare-vercel.mjs",
+  "outputDirectory": "vercel-dist",
+  "cleanUrls": false,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "no-referrer"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' https://unpkg.com https://esm.sh; connect-src 'self' https://nest-nft-launchpad-production.up.railway.app https://*.up.railway.app https://rpc.mainnet.chain.robinhood.com https://rpc.testnet.chain.robinhood.com https://ipfs.io https://*.walletconnect.com https://*.walletconnect.org wss://*.walletconnect.com wss://*.walletconnect.org https://relay.walletconnect.com https://relay.walletconnect.org https://esm.sh https://unpkg.com https://api.pinata.cloud https://gateway.pinata.cloud; frame-src https://verify.walletconnect.com https://verify.walletconnect.org https://*.walletconnect.com; worker-src 'self' blob:; upgrade-insecure-requests"
+        }
+      ]
+    },
+    {
+      "source": "/cyberpunk_card.glb",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        },
+        {
+          "key": "Content-Type",
+          "value": "model/gltf-binary"
+        }
+      ]
+    }
+  ]
+}

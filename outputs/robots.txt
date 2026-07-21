@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://nest-nft-launchpad.vercel.app/sitemap.xml

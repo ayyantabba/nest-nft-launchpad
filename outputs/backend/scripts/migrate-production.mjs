@@ -1,6 +1,11 @@
 import { execFileSync } from "node:child_process";
 import { PrismaClient } from "@prisma/client";
 
+const databaseUrl = process.env.DATABASE_URL;
+const migrationDatabaseUrl = process.env.DIRECT_DATABASE_URL
+  || databaseUrl?.replace(/:6543(?=\/)/, ":5432");
+const migrationEnv = { ...process.env, DATABASE_URL: migrationDatabaseUrl };
+
 const db = new PrismaClient();
 try {
   const [tables] = await db.$queryRawUnsafe(
@@ -27,7 +32,7 @@ try {
         "resolve",
         "--applied",
         "20260714000000_init"
-      ], { stdio: "inherit", env: process.env });
+      ], { stdio: "inherit", env: migrationEnv });
     }
   }
 } finally {
@@ -38,4 +43,6 @@ execFileSync(process.execPath, [
   "node_modules/prisma/build/index.js",
   "migrate",
   "deploy"
-], { stdio: "inherit", env: process.env });
+], { stdio: "inherit", env: migrationEnv });
+
+process.exit(0);
