@@ -28,7 +28,7 @@ const ACTIVE_NETWORK_KEY = REQUESTED_NETWORK === "mainnet" && MAINNET_DEPLOYMENT
 const ACTIVE_NETWORK = NETWORKS[ACTIVE_NETWORK_KEY];
 const SECONDARY_NETWORK = NETWORKS[ACTIVE_NETWORK_KEY === "mainnet" ? "testnet" : "mainnet"];
 const ACTIVE_FACTORY_STORAGE_KEY = ACTIVE_NETWORK_KEY === "mainnet" ? "nestFactoryMainnetAddress" : "nestFactoryTestnetAddress";
-const ACTIVE_FACTORY_VERSION = ACTIVE_NETWORK_KEY === "mainnet" ? "1.0.0" : "1.0.0-testnet";
+const ACTIVE_FACTORY_VERSION = ACTIVE_NETWORK_KEY === "mainnet" ? "1.1.0" : "1.1.0-testnet";
 const WALLETCONNECT_PROJECT_ID = window.NEST_WALLETCONNECT_PROJECT_ID || "63564cf2fc58ce8b1059edd34ac041e0";
 const WALLETCONNECT_PROVIDER_URL = "https://esm.sh/@walletconnect/ethereum-provider@2.23.10?bundle";
 const VIEM_PROVIDER_URL = "https://esm.sh/viem@2.31.7?bundle";
@@ -594,15 +594,17 @@ function explorePage() {
 }
 
 function dashboardPage() {
-  const collectionRows = platformCollections.map(c=>`<tr><td><div class="mini-art" style="${platformArtStyle(c)}"></div></td><td>${c.name}</td><td>${c.minted}/${c.supply}</td><td>${c.price === "Free" ? "Free" : c.price + " ETH"}</td><td><a href="#/mint/${c.id}">Mint page</a></td></tr>`).join("");
+  const collectionRows = platformCollections.map(c=>`<tr><td><div class="mini-art" style="${platformArtStyle(c)}"></div></td><td>${c.name}</td><td>${c.minted}/${c.supply}</td><td>${c.price === "Free" ? "Free" : c.price + " ETH"}</td><td>${c.revenue ? weiToEth(c.revenue.creatorAccruedWei) + " ETH accrued" : "Onchain read pending"}</td><td><a href="#/mint/${c.id}">Mint page</a>${c.revenue && BigInt(c.revenue.creatorAccruedWei) > 0n ? `<button class="btn small" onclick="withdrawRevenue('${c.id}','creator')">Withdraw creator share</button>` : ""}</td></tr>`).join("");
   const ownedRows = state.buyerNfts.map((item) => { const image = ipfsUrl(item.metadata?.imageUri || item.collection?.metadataItems?.[0]?.imageUri || ""); const marketLink = ACTIVE_NETWORK_KEY === "mainnet" && item.collection?.contractAddress ? openseaAssetUrl(item.collection.contractAddress, item.tokenId) : explorerAddress(item.collection?.contractAddress || ""); return `<article class="card market-card"><div class="nft-art" style="--art: url('${image}')"></div><div class="card-body"><span class="state-label">Owned by connected wallet</span><h3>${item.collection.name} #${item.tokenId}</h3><p>Mint transaction: ${item.mintTxHash.slice(0,10)}...</p><a class="market-link" href="${marketLink}" target="_blank" rel="noopener noreferrer">${ACTIVE_NETWORK_KEY === "mainnet" ? "View on OpenSea" : "View contract"}</a></div></article>`; }).join("");
-  return shell(`<main class="page"><div class="section-head"><div><div class="kicker">Creator dashboard</div><h2>Manage Nest-deployed collections.</h2></div></div><div class="stats">${["Nest collections","Live collections","Total minted","Primary volume","Creator accrued","Nest fees","Withdrawable","Unique minters"].map((x,i)=>`<div class="stat"><span>${x}</span><strong>${dashboardStat(i)}</strong></div>`).join("")}</div><div class="section grid cols-2"><div class="panel"><h3>Collections deployed on Nest</h3><table class="table"><tr><th>Artwork</th><th>Name</th><th>Minted</th><th>Price</th><th>Link</th></tr>${collectionRows}</table></div><div class="panel"><h3>Creator actions</h3><table class="table"><tr><td>Open mint page</td><td>Public buyer-facing route</td></tr><tr><td>View contract</td><td>Robinhood Chain explorer</td></tr><tr><td>Revenue split</td><td>95% creator / 5% Nest</td></tr><tr><td>OpenSea handoff</td><td>Available after confirmed mainnet mint</td></tr></table></div></div><section class="section"><div class="section-head"><div><div class="kicker">Collector wallet</div><h2>Your minted NFTs</h2></div><p>Ownership is written only after Nest verifies the onchain mint receipt.</p></div>${ownedRows ? '<div class="grid gallery-grid">' + ownedRows + "</div>" : '<div class="panel empty-state"><h3>No confirmed Nest mints in this wallet</h3><p>Minted tokens will appear here with their token ID and marketplace link.</p></div>'}</section></main>`);
+  return shell(`<main class="page"><div class="section-head"><div><div class="kicker">Creator dashboard</div><h2>Manage Nest-deployed collections.</h2></div></div><div class="stats">${["Nest collections","Live collections","Total minted","Primary volume","Creator accrued","Nest fees accrued","Withdrawable","Unique minters"].map((x,i)=>`<div class="stat"><span>${x}</span><strong>${dashboardStat(i)}</strong></div>`).join("")}</div><div class="section grid cols-2"><div class="panel"><h3>Collections deployed on Nest</h3><table class="table"><tr><th>Artwork</th><th>Name</th><th>Minted</th><th>Price</th><th>Revenue</th><th>Action</th></tr>${collectionRows}</table></div><div class="panel"><h3>Creator actions</h3><table class="table"><tr><td>Open mint page</td><td>Public buyer-facing route</td></tr><tr><td>View contract</td><td>Robinhood Chain explorer</td></tr><tr><td>Revenue settlement</td><td>95% creator / 5% Nest accrues onchain; each fixed recipient withdraws its own share</td></tr><tr><td>OpenSea handoff</td><td>Available after confirmed mainnet mint</td></tr></table></div></div><section class="section"><div class="section-head"><div><div class="kicker">Collector wallet</div><h2>Your minted NFTs</h2></div><p>Ownership is written only after Nest verifies the onchain mint receipt.</p></div>${ownedRows ? '<div class="grid gallery-grid">' + ownedRows + "</div>" : '<div class="panel empty-state"><h3>No confirmed Nest mints in this wallet</h3><p>Minted tokens will appear here with their token ID and marketplace link.</p></div>'}</section></main>`);
 }
 
 function dashboardStat(index) {
   const totalMinted = platformCollections.reduce((sum, item) => sum + item.minted, 0);
   const live = platformCollections.filter((item) => item.status !== "Ended").length;
-  return [platformCollections.length, live, totalMinted, "Onchain read", "Onchain read", "Onchain read", "Contract read", "Indexer sync"][index];
+  const creatorAccrued = platformCollections.reduce((sum, item) => sum + BigInt(item.revenue?.creatorAccruedWei || 0), 0n);
+  const platformAccrued = platformCollections.reduce((sum, item) => sum + BigInt(item.revenue?.platformAccruedWei || 0), 0n);
+  return [platformCollections.length, live, totalMinted, "Onchain read", `${weiToEth(creatorAccrued.toString())} ETH`, `${weiToEth(platformAccrued.toString())} ETH`, `${weiToEth(creatorAccrued.toString())} ETH`, "Indexer sync"][index];
 }
 
 function adminPage() {
@@ -643,14 +645,14 @@ async function loadBackendCollections() {
   platformCollections = [];
   if (!Array.isArray(result.items) || !result.items.length) return;
   platformCollections = result.items.map((c, index) => ({
-    id: c.id, contractAddress: c.contractAddress || c.deployments?.[0]?.contractAddress || "", name: c.name,
-    creator: c.creatorName || "Nest creator", creatorAddress: c.creatorWallet, description: c.description,
+    id: c.id, contractAddress: c.contractAddress || c.deployments?.[0]?.contractAddress || "", name: escapeHtml(c.name),
+    creator: escapeHtml(c.creatorName || "Nest creator"), creatorAddress: c.creatorWallet, description: escapeHtml(c.description),
     minted: c.mintedSupply || 0, supply: c.maxSupply, price: weiToEth(c.mintPriceWei), mintPriceWei: c.mintPriceWei,
     maxWallet: c.maxPerWallet, maxTx: c.maxPerTransaction || c.maxPerWallet, chainId: c.chainId,
     status: collectionStatusLabel(c.status), canMint: c.status === "LIVE" && Boolean(c.contractAddress || c.deployments?.[0]?.contractAddress),
-    chainName: c.chainName, endsIn: mintSchedule(c), deployedAt: "Nest deployment", metadataCid: c.metadataBaseUri || "Metadata pending",
+    chainName: escapeHtml(c.chainName), endsIn: escapeHtml(mintSchedule(c)), deployedAt: "Nest deployment", metadataCid: c.metadataBaseUri || "Metadata pending",
     metadataBaseUri: c.metadataBaseUri || "", contractUri: c.contractUri || "", txHash: c.txHash || c.deployments?.[0]?.txHash || "",
-    activity: [],
+    activity: [], revenue: null,
     image: c.assets?.[0] && Number(c.assets[0].sizeBytes || 0) < 128
       ? "./assets/nest-test-artwork.png"
       : ipfsUrl(c.assets?.[0]?.ipfsUri || c.metadataItems?.[0]?.imageUri),
@@ -658,6 +660,9 @@ async function loadBackendCollections() {
   }));
   await Promise.all(platformCollections.map(async (collection) => {
     try { const activity = await apiRequest("/collections/" + collection.id + "/activity"); collection.activity = activity.items || []; } catch { collection.activity = []; }
+    if (collection.contractAddress) {
+      try { collection.revenue = await apiRequest("/collections/" + collection.id + "/revenue"); } catch { collection.revenue = null; }
+    }
   }));
   await loadBuyerNfts();
 }
@@ -1102,6 +1107,44 @@ async function mintCollection(collectionId) {
     state.mintState = "Mint confirmed and ownership recorded.";
     await loadBackendCollections(); render();
   } catch (error) { state.mintState = "Mint failed: " + error.message; render(); }
+}
+
+async function withdrawRevenue(collectionId, recipient) {
+  if (!activeWalletProvider || !state.walletAddress || !state.authToken) {
+    state.notice = "Connect and sign in with the authorized wallet before withdrawing revenue.";
+    openWalletPicker();
+    return;
+  }
+  try {
+    await ensureActiveNetwork(activeWalletProvider);
+    state.notice = `Preparing ${recipient} revenue withdrawal...`;
+    render();
+    const prepared = await apiRequest(`/collections/${collectionId}/revenue/prepare`, {
+      method: "POST",
+      body: JSON.stringify({ recipient })
+    });
+    const txHash = await activeWalletProvider.request({
+      method: "eth_sendTransaction",
+      params: [{ ...prepared.transactionRequest, value: "0x0" }]
+    });
+    const recorded = await apiRequest(`/collections/${collectionId}/revenue/record`, {
+      method: "POST",
+      body: JSON.stringify({ recipient, amountWei: prepared.amountWei, txHash })
+    });
+    state.notice = "Withdrawal submitted. Waiting for onchain confirmation...";
+    render();
+    const receipt = await waitForTransactionReceipt(activeWalletProvider, txHash);
+    if (receipt.status !== "0x1") throw new Error("Revenue withdrawal reverted");
+    await apiRequest("/revenue/confirm", {
+      method: "POST",
+      body: JSON.stringify({ withdrawalId: recorded.id })
+    });
+    await loadBackendCollections();
+    state.notice = `${recipient === "platform" ? "Nest platform" : "Creator"} revenue paid to its fixed onchain recipient.`;
+  } catch (error) {
+    state.notice = `Revenue withdrawal failed: ${error.message}`;
+  }
+  render();
 }
 
 async function requestOpenSeaRefresh(collectionId, tokenId) {

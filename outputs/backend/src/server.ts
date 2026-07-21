@@ -58,6 +58,21 @@ const mintEventsAbi = [
     { indexed: true, name: "from", type: "address" }, { indexed: true, name: "to", type: "address" }, { indexed: true, name: "tokenId", type: "uint256" }
   ]}
 ] as const;
+const collectionRevenueAbi = [
+  { type: "function", name: "creatorAccrued", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "platformAccrued", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "totalSupply", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "withdrawCreator", stateMutability: "nonpayable", inputs: [], outputs: [] },
+  { type: "function", name: "withdrawPlatform", stateMutability: "nonpayable", inputs: [], outputs: [] }
+] as const;
+const collectionRevenueEventsAbi = [
+  { type: "event", name: "CreatorWithdrawal", anonymous: false, inputs: [
+    { indexed: true, name: "to", type: "address" }, { indexed: false, name: "amount", type: "uint256" }
+  ]},
+  { type: "event", name: "PlatformWithdrawal", anonymous: false, inputs: [
+    { indexed: true, name: "to", type: "address" }, { indexed: false, name: "amount", type: "uint256" }
+  ]}
+] as const;
 function rpcForChain(chainId: number) {
   if (chainId === 46630) return env.ROBINHOOD_TESTNET_RPC_URL;
   if (chainId === 4663) return env.ROBINHOOD_MAINNET_RPC_URL;
@@ -87,7 +102,12 @@ app.setErrorHandler((error, _request, reply) => {
 
 const healthHandler = async () => {
   await db.$queryRawUnsafe("SELECT 1");
-  return { status: "ok", service: "nest-api", environment: env.NODE_ENV, integrations: { database: true, pinata: env.IPFS_PROVIDER === "pinata" && Boolean(env.PINATA_JWT), testnetFactory: Boolean(env.FACTORY_TESTNET_ADDRESS), mainnetEnabled: env.CONFIRM_MAINNET_DEPLOYMENT === "true" && Boolean(env.FACTORY_MAINNET_ADDRESS), opensea: Boolean(env.OPENSEA_API_KEY && env.OPENSEA_CHAIN_SLUG) } };
+  const [testnetChainId, mainnetChainId] = await Promise.all([
+    clientForChain(46630).getChainId().catch(() => null),
+    clientForChain(4663).getChainId().catch(() => null)
+  ]);
+  const rpc = { testnet: testnetChainId === 46630, mainnet: mainnetChainId === 4663 };
+  return { status: rpc.testnet && rpc.mainnet ? "ok" : "degraded", service: "nest-api", environment: env.NODE_ENV, integrations: { database: true, pinata: env.IPFS_PROVIDER === "pinata" && Boolean(env.PINATA_JWT), rpc, testnetFactory: Boolean(env.FACTORY_TESTNET_ADDRESS), mainnetEnabled: env.CONFIRM_MAINNET_DEPLOYMENT === "true" && Boolean(env.FACTORY_MAINNET_ADDRESS), opensea: Boolean(env.OPENSEA_API_KEY && env.OPENSEA_CHAIN_SLUG) } };
 };
 app.get("/health", healthHandler);
 app.get("/v1/health", healthHandler);
@@ -118,7 +138,7 @@ app.post("/v1/auth/verify", async (request, reply) => {
 
 const collectionInput = z.object({
   name: z.string().min(1).max(100), symbol: z.string().min(1).max(12), description: z.string().max(5000),
-  chainId: z.number().int(), chainName: z.string().min(1), mintCurrency: z.string().min(1).max(10),
+  chainId: z.union([z.literal(46630), z.literal(4663)]), chainName: z.enum(["Robinhood Chain Testnet", "Robinhood Chain"]), mintCurrency: z.literal("ETH"),
   mintPriceWei: z.string().regex(/^\d+$/), maxSupply: z.number().int().positive().max(10000),
   maxPerWallet: z.number().int().positive(), maxPerTransaction: z.number().int().positive().default(1), royaltyBps: z.number().int().min(0).max(1000),
   creatorPayoutWallet: address, websiteUrl: z.string().url().optional(), socialUrl: z.string().url().optional(),
@@ -127,6 +147,9 @@ const collectionInput = z.object({
 
 app.post("/v1/collections", { preHandler: [app.authenticate] }, async (request, reply) => {
   const input = collectionInput.parse(request.body);
+  const expectedName = input.chainId === 4663 ? "Robinhood Chain" : "Robinhood Chain Testnet";
+  if (input.chainName !== expectedName) return reply.code(400).send({ error: "CHAIN_CONFIGURATION_MISMATCH" });
+  if (input.chainId === 4663 && env.CONFIRM_MAINNET_DEPLOYMENT !== "true") return reply.code(403).send({ error: "MAINNET_DISABLED" });
   const collection = await db.collection.create({ data: { ...input, creatorWallet: request.user.walletAddress } });
   return reply.code(201).send(collection);
 });
@@ -360,6 +383,106 @@ app.get("/v1/collections/:id/activity", async (request) => {
   return { items: items.map((item) => ({ ...item, blockNumber: item.blockNumber?.toString() })) };
 });
 
+app.get("/v1/collections/:id/revenue", async (request, reply) => {
+  const { id } = z.object({ id: z.string() }).parse(request.params);
+  const collection = await db.collection.findUnique({ where: { id } });
+  if (!collection?.contractAddress) return reply.code(404).send({ error: "COLLECTION_NOT_LIVE" });
+  const client = clientForChain(collection.chainId);
+  const contractAddress = getAddress(collection.contractAddress);
+  const [creatorAccrued, platformAccrued, totalSupply, withdrawals] = await Promise.all([
+    client.readContract({ address: contractAddress, abi: collectionRevenueAbi, functionName: "creatorAccrued" }),
+    client.readContract({ address: contractAddress, abi: collectionRevenueAbi, functionName: "platformAccrued" }),
+    client.readContract({ address: contractAddress, abi: collectionRevenueAbi, functionName: "totalSupply" }),
+    db.revenueWithdrawal.findMany({ where: { collectionId: id, status: "CONFIRMED" } })
+  ]);
+  const creatorSettled = withdrawals.filter((item) => item.recipient === "CREATOR").reduce((sum, item) => sum + BigInt(item.amountWei), 0n);
+  const platformSettled = withdrawals.filter((item) => item.recipient === "PLATFORM").reduce((sum, item) => sum + BigInt(item.amountWei), 0n);
+  return {
+    settlementModel: "PULL_PAYMENT",
+    creatorAccruedWei: creatorAccrued.toString(),
+    platformAccruedWei: platformAccrued.toString(),
+    creatorSettledWei: creatorSettled.toString(),
+    platformSettledWei: platformSettled.toString(),
+    totalSupply: totalSupply.toString(),
+    creatorPayoutWallet: collection.creatorPayoutWallet,
+    platformTreasuryWallet: env.PLATFORM_TREASURY_ADDRESS,
+    withdrawalFunctions: { creator: "withdrawCreator", platform: "withdrawPlatform" }
+  };
+});
+
+app.post("/v1/collections/:id/revenue/prepare", { preHandler: [app.authenticate] }, async (request, reply) => {
+  const { id } = z.object({ id: z.string() }).parse(request.params);
+  const { recipient } = z.object({ recipient: z.enum(["creator", "platform"]) }).parse(request.body);
+  const collection = await db.collection.findUnique({ where: { id } });
+  if (!collection?.contractAddress) return reply.code(404).send({ error: "COLLECTION_NOT_LIVE" });
+  const wallet = request.user.walletAddress.toLowerCase();
+  const isCreator = collection.creatorWallet.toLowerCase() === wallet;
+  const isAdmin = env.ADMIN_WALLETS.split(",").some((entry) => entry.trim().toLowerCase() === wallet);
+  if ((recipient === "creator" && !isCreator) || (recipient === "platform" && !isAdmin)) return reply.code(403).send({ error: "FORBIDDEN" });
+  const functionName = recipient === "creator" ? "withdrawCreator" : "withdrawPlatform";
+  const accruedFunction = recipient === "creator" ? "creatorAccrued" : "platformAccrued";
+  const amount = await clientForChain(collection.chainId).readContract({ address: getAddress(collection.contractAddress), abi: collectionRevenueAbi, functionName: accruedFunction });
+  if (amount === 0n) return reply.code(409).send({ error: "NOTHING_TO_WITHDRAW" });
+  return {
+    settlementModel: "PULL_PAYMENT",
+    recipient,
+    amountWei: amount.toString(),
+    transactionRequest: {
+      chainId: collection.chainId,
+      from: request.user.walletAddress,
+      to: getAddress(collection.contractAddress),
+      data: encodeFunctionData({ abi: collectionRevenueAbi, functionName }),
+      value: "0"
+    }
+  };
+});
+
+app.post("/v1/collections/:id/revenue/record", { preHandler: [app.authenticate] }, async (request, reply) => {
+  const { id } = z.object({ id: z.string() }).parse(request.params);
+  const body = z.object({ recipient: z.enum(["creator", "platform"]), amountWei: z.string().regex(/^\d+$/), txHash: z.string().regex(/^0x[a-fA-F0-9]{64}$/) }).parse(request.body);
+  const collection = await db.collection.findUnique({ where: { id } });
+  if (!collection?.contractAddress) return reply.code(404).send({ error: "COLLECTION_NOT_LIVE" });
+  const wallet = request.user.walletAddress.toLowerCase();
+  const isCreator = collection.creatorWallet.toLowerCase() === wallet;
+  const isAdmin = env.ADMIN_WALLETS.split(",").some((entry) => entry.trim().toLowerCase() === wallet);
+  if ((body.recipient === "creator" && !isCreator) || (body.recipient === "platform" && !isAdmin)) return reply.code(403).send({ error: "FORBIDDEN" });
+  const recipient = body.recipient === "creator" ? "CREATOR" : "PLATFORM";
+  const withdrawal = await db.revenueWithdrawal.create({ data: { collectionId: id, requesterWallet: request.user.walletAddress, recipient, amountWei: body.amountWei, txHash: body.txHash, status: "PENDING" } });
+  return reply.code(201).send(withdrawal);
+});
+
+app.post("/v1/revenue/confirm", { preHandler: [app.authenticate] }, async (request, reply) => {
+  const { withdrawalId } = z.object({ withdrawalId: z.string() }).parse(request.body);
+  const withdrawal = await db.revenueWithdrawal.findUnique({ where: { id: withdrawalId }, include: { collection: true } });
+  if (!withdrawal) return reply.code(404).send({ error: "WITHDRAWAL_NOT_FOUND" });
+  if (withdrawal.requesterWallet.toLowerCase() !== request.user.walletAddress.toLowerCase()) return reply.code(403).send({ error: "FORBIDDEN" });
+  if (withdrawal.status === "CONFIRMED") return { withdrawal: { ...withdrawal, blockNumber: withdrawal.blockNumber?.toString() ?? null } };
+  if (!withdrawal.collection.contractAddress) return reply.code(409).send({ error: "COLLECTION_NOT_LIVE" });
+  const receipt = await clientForChain(withdrawal.collection.chainId).getTransactionReceipt({ hash: withdrawal.txHash as `0x${string}` });
+  if (receipt.status !== "success") {
+    await db.revenueWithdrawal.update({ where: { id: withdrawal.id }, data: { status: "FAILED" } });
+    return reply.code(409).send({ error: "WITHDRAWAL_REVERTED" });
+  }
+  const contractAddress = withdrawal.collection.contractAddress.toLowerCase();
+  if (receipt.to?.toLowerCase() !== contractAddress || receipt.from.toLowerCase() !== withdrawal.requesterWallet.toLowerCase()) return reply.code(409).send({ error: "WITHDRAWAL_TRANSACTION_MISMATCH" });
+  const expectedEvent = withdrawal.recipient === "CREATOR" ? "CreatorWithdrawal" : "PlatformWithdrawal";
+  const expectedRecipient = withdrawal.recipient === "CREATOR" ? withdrawal.collection.creatorPayoutWallet : env.PLATFORM_TREASURY_ADDRESS;
+  let matched = false;
+  for (const log of receipt.logs) {
+    if (log.address.toLowerCase() !== contractAddress) continue;
+    try {
+      const decoded = decodeEventLog({ abi: collectionRevenueEventsAbi, data: log.data, topics: log.topics });
+      if (decoded.eventName !== expectedEvent) continue;
+      const args = decoded.args as unknown as { to: string; amount: bigint };
+      matched = args.to.toLowerCase() === expectedRecipient.toLowerCase() && args.amount.toString() === withdrawal.amountWei;
+      if (matched) break;
+    } catch {}
+  }
+  if (!matched) return reply.code(409).send({ error: "WITHDRAWAL_EVENT_MISMATCH" });
+  const confirmed = await db.revenueWithdrawal.update({ where: { id: withdrawal.id }, data: { status: "CONFIRMED", blockNumber: receipt.blockNumber, confirmedAt: new Date() } });
+  return { withdrawal: { ...confirmed, blockNumber: confirmed.blockNumber?.toString() ?? null } };
+});
+
 app.post("/v1/marketplace/opensea/refresh", { preHandler: [app.authenticate] }, async (request, reply) => {
   const body = z.object({ collectionId: z.string(), tokenId: z.number().int().positive() }).parse(request.body);
   const collection = await db.collection.findUnique({ where: { id: body.collectionId } });
@@ -374,7 +497,7 @@ app.post("/v1/marketplace/opensea/refresh", { preHandler: [app.authenticate] }, 
 app.get("/v1/dashboard/creator", { preHandler: [app.authenticate] }, async (request) => {
   const collections = await db.collection.findMany({ where: { creatorWallet: request.user.walletAddress }, include: { mints: { where: { status: "CONFIRMED" } }, deployments: { take: 1, orderBy: { createdAt: "desc" } } } });
   const safeCollections = collections.map((collection) => ({ ...collection, mints: collection.mints.map((mint) => ({ ...mint, blockNumber: mint.blockNumber?.toString() ?? null })) }));
-  return { collections: safeCollections, totals: { collections: collections.length, minted: collections.reduce((n, c) => n + c.mintedSupply, 0), revenueWei: collections.flatMap((c) => c.mints).reduce((n, m) => n + BigInt(m.creatorAmountWei), 0n).toString() } };
+  return { collections: safeCollections, totals: { collections: collections.length, minted: collections.reduce((n, c) => n + c.mintedSupply, 0), creatorAccruedFromConfirmedMintsWei: collections.flatMap((c) => c.mints).reduce((n, m) => n + BigInt(m.creatorAmountWei), 0n).toString(), settlementModel: "PULL_PAYMENT", accountingNote: "Confirmed mint revenue is accrued onchain until withdrawCreator or withdrawPlatform succeeds." } };
 });
 
 const publicRoot = join(process.cwd(), "public");

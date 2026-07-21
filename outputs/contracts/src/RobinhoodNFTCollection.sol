@@ -21,6 +21,7 @@ contract RobinhoodNFTCollection is ERC721Royalty, Ownable2Step, ReentrancyGuard,
     error TxLimitExceeded();
     error IncorrectPayment();
     error InvalidAddress();
+    error NothingToWithdraw();
     error WithdrawFailed();
 
     struct CollectionConfig {
@@ -121,6 +122,7 @@ contract RobinhoodNFTCollection is ERC721Royalty, Ownable2Step, ReentrancyGuard,
 
     function withdrawCreator() external nonReentrant {
         uint256 amount = creatorAccrued;
+        if (amount == 0) revert NothingToWithdraw();
         creatorAccrued = 0;
         (bool ok,) = payable(creatorPayout).call{value: amount}("");
         if (!ok) revert WithdrawFailed();
@@ -128,7 +130,18 @@ contract RobinhoodNFTCollection is ERC721Royalty, Ownable2Step, ReentrancyGuard,
     }
 
     function withdrawPlatform() external nonReentrant {
+        _withdrawPlatform();
+    }
+
+    /// @notice Compatibility alias for treasury operators and external tooling.
+    /// Anyone may trigger the payout, but funds always go to platformTreasury.
+    function withdrawTreasury() external nonReentrant {
+        _withdrawPlatform();
+    }
+
+    function _withdrawPlatform() private {
         uint256 amount = platformAccrued;
+        if (amount == 0) revert NothingToWithdraw();
         platformAccrued = 0;
         (bool ok,) = payable(platformTreasury).call{value: amount}("");
         if (!ok) revert WithdrawFailed();
@@ -174,6 +187,11 @@ contract RobinhoodNFTCollection is ERC721Royalty, Ownable2Step, ReentrancyGuard,
         return collectionContractURI;
     }
 
+    /// @notice Marketplace-compatible minted supply counter.
+    function totalSupply() external view returns (uint256) {
+        return totalMinted;
+    }
+
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
         _requireOwned(tokenId);
         return string.concat(baseTokenURI, tokenId.toString(), ".json");
@@ -183,4 +201,3 @@ contract RobinhoodNFTCollection is ERC721Royalty, Ownable2Step, ReentrancyGuard,
         return super.supportsInterface(interfaceId);
     }
 }
-
