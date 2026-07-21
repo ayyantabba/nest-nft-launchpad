@@ -13,24 +13,59 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import { env } from "./config.js";
 import { db } from "./db.js";
 import { createJsonDirectoryForm } from "./pinata.js";
+import {
+  assertContiguousTokenIds,
+  assertMintLimits,
+  clearSessionCookieHeader,
+  parseCookies,
+  plainDescription,
+  plainName,
+  plainSymbol,
+  SESSION_COOKIE,
+  sessionCookieHeader
+} from "./validation.js";
 import "./types.js";
 
 const app = Fastify({ logger: env.NODE_ENV === "development" ? { transport: { target: "pino-pretty" } } : true });
-await app.register(cors, { origin: env.APP_ORIGIN.split(",").map((v) => v.trim()), credentials: true });
+const allowedOrigins = env.APP_ORIGIN.split(",").map((v) => v.trim()).filter(Boolean);
+await app.register(cors, { origin: allowedOrigins, credentials: true });
 await app.register(helmet);
 await app.register(rateLimit, { max: 100, timeWindow: "1 minute" });
-await app.register(jwt, { secret: env.NEST_SESSION_SECRET, sign: { expiresIn: "7d" } });
+await app.register(jwt, { secret: env.NEST_SESSION_SECRET, sign: { expiresIn: "12h" } });
 await app.register(multipart, { limits: { fileSize: 25 * 1024 * 1024, files: 1000 } });
 
 const address = z.string().transform((value, ctx) => {
   try { return getAddress(value); } catch { ctx.addIssue({ code: "custom", message: "Invalid EVM address" }); return z.NEVER; }
 });
-const auth = async (request: FastifyRequest) => request.jwtVerify();
+
+/** Accept Authorization Bearer (in-memory client) or httpOnly nest_session cookie. */
+const auth = async (request: FastifyRequest) => {
+  const header = request.headers.authorization;
+  if (header?.startsWith("Bearer ")) {
+    await request.jwtVerify();
+    return;
+  }
+  const token = parseCookies(request.headers.cookie)[SESSION_COOKIE];
+  if (!token) {
+    throw Object.assign(new Error("Unauthorized"), { statusCode: 401 });
+  }
+  const payload = app.jwt.verify<{ sub: string; walletAddress: string }>(token);
+  request.user = payload;
+};
 
 declare module "fastify" {
   interface FastifyInstance { authenticate: typeof auth }
 }
 app.decorate("authenticate", auth);
+
+app.addHook("onRequest", async (request, reply) => {
+  if (!["POST", "PUT", "PATCH", "DELETE"].includes(request.method)) return;
+  const origin = request.headers.origin;
+  if (!origin) return;
+  if (!allowedOrigins.includes(origin)) {
+    return reply.code(403).send({ error: "ORIGIN_FORBIDDEN" });
+  }
+});
 
 const factoryCreateAbi = [{
   type: "function", name: "createCollection", stateMutability: "nonpayable",
@@ -90,24 +125,88 @@ function unixSeconds(value: Date | null) { return value ? BigInt(Math.floor(valu
 app.setErrorHandler((error, _request, reply) => {
   if (error instanceof ZodError) return reply.code(400).send({ error: "VALIDATION_ERROR", details: error.flatten() });
   if ((error as { code?: string }).code === "P2002") return reply.code(409).send({ error: "CONFLICT" });
-  app.log.error(error);
-  const apiError = error as { statusCode?: number; message?: string };
+  const errorId = randomBytes(8).toString("hex");
+  app.log.error({ errorId, err: error });
+  const apiError = error as { statusCode?: number; message?: string; details?: unknown };
   const statusCode = apiError.statusCode && apiError.statusCode >= 400 ? apiError.statusCode : 500;
-  const publicOperationalErrors = new Set(["FACTORY_NOT_CONFIGURED", "IPFS_NOT_CONFIGURED"]);
-  const publicMessage = apiError.message && publicOperationalErrors.has(apiError.message)
+  const publicOperationalErrors = new Set([
+    "FACTORY_NOT_CONFIGURED", "IPFS_NOT_CONFIGURED",
+    "MAX_PER_TRANSACTION_EXCEEDS_WALLET", "MAX_PER_WALLET_EXCEEDS_SUPPLY", "MAX_PER_TRANSACTION_EXCEEDS_SUPPLY",
+    "METADATA_DUPLICATE_TOKEN_ID", "METADATA_TOKEN_ID_SEQUENCE", "METADATA_SUPPLY_MISMATCH",
+    "NAME_HTML_NOT_ALLOWED", "DESCRIPTION_HTML_NOT_ALLOWED", "SYMBOL_HTML_NOT_ALLOWED",
+    "ROYALTY_BPS_OUT_OF_RANGE"
+  ]);
+  if (statusCode >= 500) {
+    return reply.code(statusCode).send({ error: "INTERNAL_ERROR", errorId });
+  }
+  const publicMessage = apiError.message && (publicOperationalErrors.has(apiError.message) || statusCode < 500)
     ? apiError.message
-    : statusCode < 500 ? apiError.message : "INTERNAL_ERROR";
-  return reply.code(statusCode).send({ error: publicMessage });
+    : "REQUEST_ERROR";
+  return reply.code(statusCode).send({
+    error: publicMessage,
+    errorId,
+    ...(apiError.details ? { details: apiError.details } : {})
+  });
 });
 
-const healthHandler = async () => {
-  await db.$queryRawUnsafe("SELECT 1");
-  const [testnetChainId, mainnetChainId] = await Promise.all([
+async function probePinata(): Promise<boolean> {
+  if (env.IPFS_PROVIDER !== "pinata" || !env.PINATA_JWT) return false;
+  try {
+    const response = await fetch("https://api.pinata.cloud/data/testAuthentication", {
+      headers: { authorization: `Bearer ${env.PINATA_JWT}` },
+      signal: AbortSignal.timeout(5000)
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function probeFactory(chainId: number, addressValue?: string): Promise<boolean> {
+  if (!addressValue || !/^0x[a-fA-F0-9]{40}$/.test(addressValue)) return false;
+  try {
+    const code = await clientForChain(chainId).getBytecode({ address: getAddress(addressValue) });
+    return Boolean(code && code !== "0x");
+  } catch {
+    return false;
+  }
+}
+
+const healthHandler = async (_request: FastifyRequest, reply: FastifyReply) => {
+  let database = false;
+  try {
+    await db.$queryRawUnsafe("SELECT 1");
+    database = true;
+  } catch {
+    database = false;
+  }
+  const [testnetChainId, mainnetChainId, pinata, testnetFactoryLive, mainnetFactoryLive] = await Promise.all([
     clientForChain(46630).getChainId().catch(() => null),
-    clientForChain(4663).getChainId().catch(() => null)
+    clientForChain(4663).getChainId().catch(() => null),
+    probePinata(),
+    probeFactory(46630, env.FACTORY_TESTNET_ADDRESS),
+    probeFactory(4663, env.FACTORY_MAINNET_ADDRESS)
   ]);
   const rpc = { testnet: testnetChainId === 46630, mainnet: mainnetChainId === 4663 };
-  return { status: rpc.testnet && rpc.mainnet ? "ok" : "degraded", service: "nest-api", environment: env.NODE_ENV, integrations: { database: true, pinata: env.IPFS_PROVIDER === "pinata" && Boolean(env.PINATA_JWT), rpc, testnetFactory: Boolean(env.FACTORY_TESTNET_ADDRESS), mainnetEnabled: env.CONFIRM_MAINNET_DEPLOYMENT === "true" && Boolean(env.FACTORY_MAINNET_ADDRESS), opensea: Boolean(env.OPENSEA_API_KEY && env.OPENSEA_CHAIN_SLUG) } };
+  const mainnetEnabled = env.CONFIRM_MAINNET_DEPLOYMENT === "true" && Boolean(env.FACTORY_MAINNET_ADDRESS);
+  const healthyCore = database && rpc.testnet;
+  const body = {
+    status: healthyCore && rpc.mainnet ? "ok" : database ? "degraded" : "down",
+    service: "nest-api",
+    environment: env.NODE_ENV,
+    integrations: {
+      database,
+      pinata,
+      rpc,
+      testnetFactory: Boolean(env.FACTORY_TESTNET_ADDRESS),
+      testnetFactoryLive,
+      mainnetEnabled,
+      mainnetFactoryLive: mainnetEnabled ? mainnetFactoryLive : false,
+      opensea: Boolean(env.OPENSEA_API_KEY && env.OPENSEA_CHAIN_SLUG)
+    }
+  };
+  if (!database) return reply.code(503).send(body);
+  return body;
 };
 app.get("/health", healthHandler);
 app.get("/v1/health", healthHandler);
@@ -133,20 +232,40 @@ app.post("/v1/auth/verify", async (request, reply) => {
   if (!valid) return reply.code(401).send({ error: "INVALID_SIGNATURE" });
   const user = await db.user.upsert({ where: { walletAddress: pending.walletAddress }, update: {}, create: { walletAddress: pending.walletAddress } });
   await db.walletSession.update({ where: { id: pending.id }, data: { signature: body.signature, userId: user.id } });
-  return { token: app.jwt.sign({ sub: user.id, walletAddress: user.walletAddress }), user };
+  const token = app.jwt.sign({ sub: user.id, walletAddress: user.walletAddress });
+  reply.header("Set-Cookie", sessionCookieHeader(token));
+  // Token is also returned for in-memory Authorization use; clients must not persist it in localStorage.
+  return { token, user, sessionStorage: "httpOnly_cookie_and_memory" };
+});
+
+app.get("/v1/auth/me", { preHandler: [app.authenticate] }, async (request) => {
+  return { walletAddress: request.user.walletAddress, sub: request.user.sub };
+});
+
+app.post("/v1/auth/logout", async (_request, reply) => {
+  reply.header("Set-Cookie", clearSessionCookieHeader());
+  return { ok: true };
 });
 
 const collectionInput = z.object({
-  name: z.string().min(1).max(100), symbol: z.string().min(1).max(12), description: z.string().max(5000),
+  name: plainName, symbol: plainSymbol, description: plainDescription,
   chainId: z.union([z.literal(46630), z.literal(4663)]), chainName: z.enum(["Robinhood Chain Testnet", "Robinhood Chain"]), mintCurrency: z.literal("ETH"),
   mintPriceWei: z.string().regex(/^\d+$/), maxSupply: z.number().int().positive().max(10000),
-  maxPerWallet: z.number().int().positive(), maxPerTransaction: z.number().int().positive().default(1), royaltyBps: z.number().int().min(0).max(1000),
+  maxPerWallet: z.number().int().positive(), maxPerTransaction: z.number().int().positive().default(1),
+  // royaltyBps max 1000 = 10% secondary royalty signal (ERC-2981); primary Nest fee is separate (5% onchain).
+  royaltyBps: z.number().int().min(0).max(1000),
   creatorPayoutWallet: address, websiteUrl: z.string().url().optional(), socialUrl: z.string().url().optional(),
   mintStartAt: z.coerce.date().optional(), mintEndAt: z.coerce.date().optional(), referralCode: z.string().max(64).optional()
 });
 
 app.post("/v1/collections", { preHandler: [app.authenticate] }, async (request, reply) => {
   const input = collectionInput.parse(request.body);
+  assertMintLimits({
+    maxSupply: input.maxSupply,
+    maxPerWallet: input.maxPerWallet,
+    maxPerTransaction: input.maxPerTransaction,
+    royaltyBps: input.royaltyBps
+  });
   const expectedName = input.chainId === 4663 ? "Robinhood Chain" : "Robinhood Chain Testnet";
   if (input.chainName !== expectedName) return reply.code(400).send({ error: "CHAIN_CONFIGURATION_MISMATCH" });
   if (input.chainId === 4663 && env.CONFIRM_MAINNET_DEPLOYMENT !== "true") return reply.code(403).send({ error: "MAINNET_DISABLED" });
@@ -183,6 +302,12 @@ app.patch("/v1/collections/:id", { preHandler: [app.authenticate] }, async (requ
   if (!existing) return reply.code(404).send({ error: "NOT_FOUND" });
   if (existing.creatorWallet.toLowerCase() !== request.user.walletAddress.toLowerCase()) return reply.code(403).send({ error: "FORBIDDEN" });
   const input = collectionInput.partial().parse(request.body);
+  assertMintLimits({
+    maxSupply: input.maxSupply ?? existing.maxSupply,
+    maxPerWallet: input.maxPerWallet ?? existing.maxPerWallet,
+    maxPerTransaction: input.maxPerTransaction ?? existing.maxPerTransaction,
+    royaltyBps: input.royaltyBps ?? existing.royaltyBps
+  });
   return db.collection.update({ where: { id }, data: input });
 });
 
@@ -258,12 +383,12 @@ app.post("/v1/storage/artwork", { preHandler: [app.authenticate] }, async (reque
 
 app.post("/v1/storage/metadata", { preHandler: [app.authenticate] }, async (request, reply) => {
   const body = z.object({ collectionId: z.string(), externalUrl: z.string().url().optional(), items: z.array(z.object({
-    tokenId: z.number().int().positive(), name: z.string().min(1), description: z.string(), image: z.string().startsWith("ipfs://"),
-    attributes: z.array(z.object({ trait_type: z.string(), value: z.union([z.string(), z.number()]) })).default([])
+    tokenId: z.number().int().positive(), name: plainName, description: plainDescription, image: z.string().startsWith("ipfs://"),
+    attributes: z.array(z.object({ trait_type: z.string().max(64), value: z.union([z.string().max(256), z.number()]) })).default([])
   })).min(1).max(10000) }).parse(request.body);
   const ownership = await requireOwnedCollection(body.collectionId, request.user.walletAddress);
   if (ownership.error || !ownership.collection) return reply.code(ownership.error === "NOT_FOUND" ? 404 : 403).send({ error: ownership.error });
-  if (body.items.length !== ownership.collection.maxSupply) return reply.code(400).send({ error: "METADATA_SUPPLY_MISMATCH" });
+  assertContiguousTokenIds(body.items.map((item) => item.tokenId), ownership.collection.maxSupply);
   const files = body.items.map((item) => ({ filename: item.tokenId + ".json", content: { name: item.name, description: item.description, image: item.image, external_url: body.externalUrl, attributes: item.attributes } }));
   const metadataCid = await pinJsonDirectory(files, ownership.collection.name + "-metadata");
   const contractCid = await pinJson({ name: ownership.collection.name, description: ownership.collection.description, image: body.items[0]?.image, external_link: body.externalUrl, seller_fee_basis_points: ownership.collection.royaltyBps, fee_recipient: ownership.collection.creatorPayoutWallet }, ownership.collection.symbol + "-contract.json");
@@ -399,6 +524,11 @@ app.get("/v1/collections/:id/revenue", async (request, reply) => {
   const platformSettled = withdrawals.filter((item) => item.recipient === "PLATFORM").reduce((sum, item) => sum + BigInt(item.amountWei), 0n);
   return {
     settlementModel: "PULL_PAYMENT",
+    accounting: {
+      note: "Accrued balances live in the collection contract until withdraw. nestFeeAmountWei on mints is allocation, not settled cash.",
+      creator: { accruedWei: creatorAccrued.toString(), settledWei: creatorSettled.toString(), withdrawableWei: creatorAccrued.toString() },
+      platform: { accruedWei: platformAccrued.toString(), settledWei: platformSettled.toString(), withdrawableWei: platformAccrued.toString() }
+    },
     creatorAccruedWei: creatorAccrued.toString(),
     platformAccruedWei: platformAccrued.toString(),
     creatorSettledWei: creatorSettled.toString(),
@@ -497,7 +627,21 @@ app.post("/v1/marketplace/opensea/refresh", { preHandler: [app.authenticate] }, 
 app.get("/v1/dashboard/creator", { preHandler: [app.authenticate] }, async (request) => {
   const collections = await db.collection.findMany({ where: { creatorWallet: request.user.walletAddress }, include: { mints: { where: { status: "CONFIRMED" } }, deployments: { take: 1, orderBy: { createdAt: "desc" } } } });
   const safeCollections = collections.map((collection) => ({ ...collection, mints: collection.mints.map((mint) => ({ ...mint, blockNumber: mint.blockNumber?.toString() ?? null })) }));
-  return { collections: safeCollections, totals: { collections: collections.length, minted: collections.reduce((n, c) => n + c.mintedSupply, 0), creatorAccruedFromConfirmedMintsWei: collections.flatMap((c) => c.mints).reduce((n, m) => n + BigInt(m.creatorAmountWei), 0n).toString(), settlementModel: "PULL_PAYMENT", accountingNote: "Confirmed mint revenue is accrued onchain until withdrawCreator or withdrawPlatform succeeds." } };
+  const allocatedCreatorWei = collections.flatMap((c) => c.mints).reduce((n, m) => n + BigInt(m.creatorAmountWei), 0n);
+  const allocatedPlatformWei = collections.flatMap((c) => c.mints).reduce((n, m) => n + BigInt(m.nestFeeAmountWei), 0n);
+  return {
+    collections: safeCollections,
+    totals: {
+      collections: collections.length,
+      minted: collections.reduce((n, c) => n + c.mintedSupply, 0),
+      creatorAllocatedFromConfirmedMintsWei: allocatedCreatorWei.toString(),
+      platformAllocatedFromConfirmedMintsWei: allocatedPlatformWei.toString(),
+      // Legacy key kept but labeled as allocated (not settled cash).
+      creatorAccruedFromConfirmedMintsWei: allocatedCreatorWei.toString(),
+      settlementModel: "PULL_PAYMENT",
+      accountingNote: "Mint fee fields are ACCRUED allocations only. Settled cash requires confirmed withdrawCreator / withdrawPlatform transactions. Never treat nestFeeAmountWei as treasury cash received."
+    }
+  };
 });
 
 const publicRoot = join(process.cwd(), "public");

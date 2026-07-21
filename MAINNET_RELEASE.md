@@ -2,7 +2,7 @@
 
 ## Current gate
 
-Do not set the frontend or backend to mainnet until the `v1.1.0` factory has passed the updated testnet regression and an independent smart-contract review. The network switch is intentionally two-factor: a configured mainnet factory plus an explicit confirmation flag.
+The frontend and Railway confirmation flag were switched to mainnet mode at the user's direction on 2026-07-21. No verified `v1.1.0` mainnet factory address exists yet, so collection deployment remains intentionally blocked by `FACTORY_NOT_CONFIGURED`. Do not bypass that guard with a zero, testnet, or unverified address.
 
 ## Verified network values
 

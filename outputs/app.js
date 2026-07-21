@@ -44,10 +44,11 @@ let walletConnectProvider = null;
 const observedWalletProviders = new WeakSet();
 
 async function apiRequest(path, options = {}) {
-  const token = state?.authToken || localStorage.getItem("nestAuthToken");
+  // Prefer in-memory token; never read auth JWT from localStorage (XSS-safe). Cookie is sent via credentials.
+  const token = state?.authToken || "";
   const headers = { ...(options.body instanceof FormData ? {} : { "content-type": "application/json" }), ...(options.headers || {}) };
   if (token) headers.authorization = `Bearer ${token}`;
-  const response = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  const response = await fetch(`${API_BASE}${path}`, { credentials: "include", ...options, headers });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(body.error || `API request failed (${response.status})`);
   return body;
@@ -246,7 +247,8 @@ let state = {
     txHash: "",
     contractAddress: localStorage.getItem(ACTIVE_FACTORY_STORAGE_KEY) || ""
   },
-  authToken: localStorage.getItem("nestAuthToken") || "",
+  // Auth JWT stays in memory only (and httpOnly cookie). Never restore from localStorage.
+  authToken: "",
   walletAddress: localStorage.getItem("nestWalletAddress") || "",
   collectionId: localStorage.getItem("nestDraftCollectionId") || "",
   notice: "",
@@ -280,15 +282,48 @@ window.addEventListener("hashchange", () => {
 });
 
 function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
+  return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;"
+  })[character]);
+}
+
+/** Attribute-context escaping (href, aria-label, title, etc.). */
+function escapeAttr(value) {
+  return escapeHtml(value).replace(/`/g, "&#096;");
+}
+
+/**
+ * CSS url() values for style attributes. Only http(s) or relative paths; strip quotes/parens.
+ * Prevents style-attribute breakout from attacker-controlled image URIs.
+ */
+function safeCssUrl(uri) {
+  if (!uri) return "";
+  let resolved = String(uri);
+  if (resolved.startsWith("ipfs://")) resolved = `https://ipfs.io/ipfs/${resolved.slice(7)}`;
+  if (resolved.startsWith("./") || resolved.startsWith("/")) {
+    return resolved.replace(/['"\\()\s<>]/g, "");
+  }
+  try {
+    const parsed = new URL(resolved, typeof location !== "undefined" ? location.origin : "https://nest.local");
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return "";
+    return parsed.href.replace(/['"\\()\s<>]/g, "");
+  } catch {
+    return "";
+  }
 }
 
 function artStyle(index, prop = "--art") {
-  return `${prop}: ${ARTWORK[index % ARTWORK.length]}`;
+  const gradient = ARTWORK[index % ARTWORK.length];
+  return `${prop}: ${gradient}`;
 }
 
 function collectionArtStyle(collection, prop = "--art") {
-  if (collection.image) return `${prop}: url('${collection.image}')`;
+  const safe = safeCssUrl(collection.image);
+  if (safe) return `${prop}: url('${safe}')`;
   return artStyle(collection.art || 0, prop);
 }
 
@@ -298,8 +333,14 @@ function ipfsUrl(uri) {
 }
 
 function platformArtStyle(collection, prop = "--art") {
-  if (collection.image) return `${prop}: url('${collection.image}')`;
+  const safe = safeCssUrl(collection.image);
+  if (safe) return `${prop}: url('${safe}')`;
   return artStyle(collection.art || 0, prop);
+}
+
+/** Escape at render-time for any display field (defense even if load path forgot). */
+function displayText(value) {
+  return escapeHtml(value);
 }
 
 function openseaSearchUrl(query) {
@@ -424,14 +465,19 @@ function platformEmptyState() {
 }
 
 function platformRow(c) {
-  const price = c.price === "Free" ? "Free" : `${c.price} ETH`;
-  const progress = Math.round(c.minted / c.supply * 100);
-  const contractLink = c.contractAddress ? `<a href="${explorerAddress(c.contractAddress)}" target="_blank" rel="noopener noreferrer">View contract</a>` : `<span>Contract pending</span>`;
-  return `<article class="collection-row"><a class="row-art" style="${platformArtStyle(c)}" href="#/mint/${c.id}"></a><div><span class="state-label">${c.status}</span><h3>${c.name}</h3><p>${c.description}</p><div class="row-meta"><span>${c.creator}</span><span>${price}</span><span>${c.minted}/${c.supply} minted</span><span>${c.endsIn}</span></div><div class="progress"><span style="width:${progress}%"></span></div></div><div class="row-links"><a href="#/mint/${c.id}">Open mint page</a>${contractLink}</div></article>`;
+  const price = c.price === "Free" ? "Free" : `${displayText(c.price)} ETH`;
+  const progress = Math.min(100, Math.max(0, Math.round((Number(c.minted) || 0) / (Number(c.supply) || 1) * 100)));
+  const id = encodeURIComponent(String(c.id));
+  const contractLink = c.contractAddress
+    ? `<a href="${escapeAttr(explorerAddress(c.contractAddress))}" target="_blank" rel="noopener noreferrer">View contract</a>`
+    : `<span>Contract pending</span>`;
+  return `<article class="collection-row"><a class="row-art" style="${platformArtStyle(c)}" href="#/mint/${id}"></a><div><span class="state-label">${displayText(c.status)}</span><h3>${displayText(c.name)}</h3><p>${displayText(c.description)}</p><div class="row-meta"><span>${displayText(c.creator)}</span><span>${price}</span><span>${displayText(c.minted)}/${displayText(c.supply)} minted</span><span>${displayText(c.endsIn)}</span></div><div class="progress"><span style="width:${progress}%"></span></div></div><div class="row-links"><a href="#/mint/${id}">Open mint page</a>${contractLink}</div></article>`;
 }
 
 function collectionRow(c) {
-  return `<article class="collection-row"><a class="row-art" style="${collectionArtStyle(c)}" href="#/collection/${c.id}"></a><div><span class="state-label">${c.verified ? "OpenSea verified" : "OpenSea"}</span><h3>${c.name}</h3><p>${c.description}</p><div class="row-meta"><span>Floor ${c.floor}</span><span class="metric-${c.changeType}">${c.change} 1d</span><span>${c.status}</span></div></div><div class="row-links"><a href="${c.openseaUrl || "https://opensea.io"}" target="_blank" rel="noopener noreferrer">View on OpenSea</a><span>Robinhood Chain</span></div></article>`;
+  const id = encodeURIComponent(String(c.id));
+  const opensea = escapeAttr(c.openseaUrl || "https://opensea.io");
+  return `<article class="collection-row"><a class="row-art" style="${collectionArtStyle(c)}" href="#/collection/${id}"></a><div><span class="state-label">${c.verified ? "OpenSea verified" : "OpenSea"}</span><h3>${displayText(c.name)}</h3><p>${displayText(c.description)}</p><div class="row-meta"><span>Floor ${displayText(c.floor)}</span><span class="metric-${escapeAttr(c.changeType)}">${displayText(c.change)} 1d</span><span>${displayText(c.status)}</span></div></div><div class="row-links"><a href="${opensea}" target="_blank" rel="noopener noreferrer">View on OpenSea</a><span>Robinhood Chain</span></div></article>`;
 }
 
 function openseaEmptyState(title, copy) {
@@ -463,12 +509,13 @@ function explorePreviewSection() {
 }
 
 function card(c) {
-  return `<article class="card market-card opensea-card"><div class="opensea-card-head"><a class="collection-avatar opensea-art" style="${collectionArtStyle(c)}" href="#/collection/${c.id}" aria-label="${c.name}"></a><div><span class="state-label">${c.verified ? "OpenSea verified" : "OpenSea"}</span><h3>${c.name}</h3><p>${c.status}</p></div></div><div class="card-metrics"><div><span>Floor</span><strong>${c.floor}</strong></div><div><span>1d</span><strong class="metric-${c.changeType}">${c.change}</strong></div></div><div class="opensea-card-actions"><a class="market-link" href="#/collection/${c.id}">Details</a><a class="market-link" href="${c.openseaUrl}" target="_blank" rel="noopener noreferrer">OpenSea</a></div></article>`;
+  const id = encodeURIComponent(String(c.id));
+  return `<article class="card market-card opensea-card"><div class="opensea-card-head"><a class="collection-avatar opensea-art" style="${collectionArtStyle(c)}" href="#/collection/${id}" aria-label="${escapeAttr(c.name)}"></a><div><span class="state-label">${c.verified ? "OpenSea verified" : "OpenSea"}</span><h3>${displayText(c.name)}</h3><p>${displayText(c.status)}</p></div></div><div class="card-metrics"><div><span>Floor</span><strong>${displayText(c.floor)}</strong></div><div><span>1d</span><strong class="metric-${escapeAttr(c.changeType)}">${displayText(c.change)}</strong></div></div><div class="opensea-card-actions"><a class="market-link" href="#/collection/${id}">Details</a><a class="market-link" href="${escapeAttr(c.openseaUrl)}" target="_blank" rel="noopener noreferrer">OpenSea</a></div></article>`;
 }
 
 function launchPage() {
   const steps = ["Identity", "Artwork", "Metadata", "Configuration", "Storage", "Contract preview", "Deploy"];
-  return shell(`<main class="page app-layout"><aside class="side panel">${steps.map((s,i)=>`<button class="${state.launchStep === i + 1 ? "active" : ""}" onclick="setStep(${i+1})">${String(i+1).padStart(2,"0")} ${s}</button>`).join("")}</aside><section>${state.notice ? `<div class="notice ${state.notice.toLowerCase().includes("failed") ? "error" : "success"}">${state.notice}</div>` : ""}${launchStep()}</section></main>`);
+  return shell(`<main class="page app-layout"><aside class="side panel">${steps.map((s,i)=>`<button class="${state.launchStep === i + 1 ? "active" : ""}" onclick="setStep(${i+1})">${String(i+1).padStart(2,"0")} ${s}</button>`).join("")}</aside><section>${state.notice ? `<div class="notice ${String(state.notice).toLowerCase().includes("failed") ? "error" : "success"}">${displayText(state.notice)}</div>` : ""}${launchStep()}</section></main>`);
 }
 
 function launchStep() {
@@ -488,8 +535,11 @@ function stepFrame(kicker, title, body, next = true) {
 
 function field(label, key, type = "text", cls = "") {
   const value = state.launch[key] ?? "";
-  if (type === "textarea") return `<div class="field ${cls}"><label>${label}</label><textarea oninput="setLaunch('${key}', this.value)">${value}</textarea></div>`;
-  return `<div class="field ${cls}"><label>${label}</label><input type="${type}" value="${value}" oninput="setLaunch('${key}', this.value)" /></div>`;
+  const safeKey = String(key).replace(/[^a-zA-Z0-9_]/g, "");
+  if (type === "textarea") {
+    return `<div class="field ${escapeAttr(cls)}"><label>${displayText(label)}</label><textarea oninput="setLaunch('${safeKey}', this.value)">${displayText(value)}</textarea></div>`;
+  }
+  return `<div class="field ${escapeAttr(cls)}"><label>${displayText(label)}</label><input type="${escapeAttr(type)}" value="${escapeAttr(value)}" oninput="setLaunch('${safeKey}', this.value)" /></div>`;
 }
 
 function stepIdentity() {
@@ -512,7 +562,13 @@ function stepMetadata() {
 
 function metadataJson() {
   const firstImage = state.artworkAssets.find((asset) => asset.ipfsUri)?.ipfsUri || "ipfs://IMAGE_CID";
-  return JSON.stringify({ name: state.launch.name + " #1", description: state.launch.description, image: firstImage, external_url: state.launch.website, attributes: [{ trait_type: "Background", value: "Default" }] }, null, 2);
+  return displayText(JSON.stringify({
+    name: state.launch.name + " #1",
+    description: state.launch.description,
+    image: firstImage,
+    external_url: state.launch.website,
+    attributes: [{ trait_type: "Background", value: "Default" }]
+  }, null, 2));
 }
 
 function stepConfiguration() {
@@ -525,7 +581,7 @@ function stepStorage() {
 }
 
 function stepContractPreview() {
-  return stepFrame("Step 06", "Contract preview", `<div class="panel technical-table"><div><span>Network</span><strong>${ACTIVE_NETWORK.name}</strong></div><div><span>Chain ID</span><strong>${ACTIVE_NETWORK.chainId}</strong></div><div><span>Contract type</span><strong>RobinhoodNFTCollection ERC-721</strong></div><div><span>Collection owner</span><strong>${state.launch.owner}</strong></div><div><span>Creator payout wallet</span><strong>${state.launch.payout}</strong></div><div><span>Supply</span><strong>${state.launch.supply}</strong></div><div><span>Mint price</span><strong>${state.launch.price} ETH</strong></div><div><span>Nest fee</span><strong>5% of primary mint revenue</strong></div><div><span>Metadata base URI</span><strong>ipfs://METADATA_CID/</strong></div><div><span>Estimated gas</span><strong>Requires Viem simulation</strong></div><div><span>Wallet balance</span><strong>Requires connected wallet read</strong></div></div>`);
+  return stepFrame("Step 06", "Contract preview", `<div class="panel technical-table"><div><span>Network</span><strong>${displayText(ACTIVE_NETWORK.name)}</strong></div><div><span>Chain ID</span><strong>${displayText(ACTIVE_NETWORK.chainId)}</strong></div><div><span>Contract type</span><strong>RobinhoodNFTCollection ERC-721</strong></div><div><span>Collection owner</span><strong>${displayText(state.launch.owner)}</strong></div><div><span>Creator payout wallet</span><strong>${displayText(state.launch.payout)}</strong></div><div><span>Supply</span><strong>${displayText(state.launch.supply)}</strong></div><div><span>Mint price</span><strong>${displayText(state.launch.price)} ETH</strong></div><div><span>Nest fee</span><strong>5% of primary mint revenue</strong></div><div><span>Metadata base URI</span><strong>ipfs://METADATA_CID/</strong></div><div><span>Estimated gas</span><strong>Requires Viem simulation</strong></div><div><span>Wallet balance</span><strong>Requires connected wallet read</strong></div></div>`);
 }
 
 function stepDeploy() {
@@ -538,7 +594,7 @@ function stepDeploy() {
     ["Metadata verified", state.readiness, "Token JSON, image links, and contractURI should resolve before deployment."],
     ["Collection settings valid", state.readiness, "Supply, price, wallet limits, payout wallet, and royalty values must be final."]
   ];
-  return stepFrame("Step 07", "Deploy", `<div class="grid cols-2"><div class="panel"><h3>Deploy settings</h3><table class="table deploy-docs-table"><tr><th>Setting</th><th>Status</th><th>Docs</th></tr>${deploySettings.map(([setting,status,docs])=>`<tr><td>${setting}</td><td>${status}</td><td>${docs}</td></tr>`).join("")}</table><button class="btn primary" onclick="runReadiness()">Run readiness check</button><button class="btn ghost" onclick="addNetwork()">Add Robinhood Chain</button><button class="btn ghost" onclick="switchNetwork()">Switch Network</button></div><div class="panel"><h3>Transaction states</h3>${txStates()}<p class="warning">Smart-contract deployment is permanent. Review supply, mint price, payout wallet, metadata, ownership, and Nest fee before confirming.</p><button class="btn primary" onclick="deployCollection()">Prepare wallet transaction</button><p>${state.deploymentState}</p></div></div>`, false);
+  return stepFrame("Step 07", "Deploy", `<div class="grid cols-2"><div class="panel"><h3>Deploy settings</h3><table class="table deploy-docs-table"><tr><th>Setting</th><th>Status</th><th>Docs</th></tr>${deploySettings.map(([setting,status,docs])=>`<tr><td>${displayText(setting)}</td><td>${displayText(status)}</td><td>${displayText(docs)}</td></tr>`).join("")}</table><button class="btn primary" onclick="runReadiness()">Run readiness check</button><button class="btn ghost" onclick="addNetwork()">Add Robinhood Chain</button><button class="btn ghost" onclick="switchNetwork()">Switch Network</button></div><div class="panel"><h3>Transaction states</h3>${txStates()}<p class="warning">Smart-contract deployment is permanent. Review supply, mint price, payout wallet, metadata, ownership, and Nest fee before confirming.</p><button class="btn primary" onclick="deployCollection()">Prepare wallet transaction</button><p>${displayText(state.deploymentState)}</p></div></div>`, false);
 }
 
 function txStates() {
@@ -558,18 +614,33 @@ function mintCollectionPage(id) {
 }
 
 function platformCard(c) {
-  const price = c.price === "Free" ? "Free" : `${c.price} ETH`;
-  const progress = Math.round(c.minted / c.supply * 100);
-  return `<article class="card market-card"><a href="#/mint/${c.id}"><div class="nft-art" style="${platformArtStyle(c)}"></div></a><div class="card-body"><span class="state-label">${c.status}</span><h3>${c.name}</h3><p>${c.creator}</p><div class="progress"><span style="width:${progress}%"></span></div><div class="card-metrics"><div><span>Minted</span><strong>${c.minted}/${c.supply}</strong></div><div><span>Price</span><strong>${price}</strong></div></div><a class="market-link" href="#/mint/${c.id}">${c.canMint ? "Mint collection" : "View upcoming drop"}</a></div></article>`;
+  const price = c.price === "Free" ? "Free" : `${displayText(c.price)} ETH`;
+  const progress = Math.min(100, Math.max(0, Math.round((Number(c.minted) || 0) / (Number(c.supply) || 1) * 100)));
+  return `<article class="card market-card"><a href="#/mint/${id}"><div class="nft-art" style="${platformArtStyle(c)}"></div></a><div class="card-body"><span class="state-label">${displayText(c.status)}</span><h3>${displayText(c.name)}</h3><p>${displayText(c.creator)}</p><div class="progress"><span style="width:${progress}%"></span></div><div class="card-metrics"><div><span>Minted</span><strong>${displayText(c.minted)}/${displayText(c.supply)}</strong></div><div><span>Price</span><strong>${price}</strong></div></div><a class="market-link" href="#/mint/${id}">${c.canMint ? "Mint collection" : "View upcoming drop"}</a></div></article>`;
 }
 
 function mintModule(c) {
-  const price = c.price === "Free" ? "Free" : c.price + " ETH";
-  const progress = Math.round(c.minted / c.supply * 100);
-  const contract = c.contractAddress ? '<a href="' + explorerAddress(c.contractAddress) + '" target="_blank" rel="noopener noreferrer">' + c.contractAddress + "</a>" : "Pending deployment";
+  const price = c.price === "Free" ? "Free" : displayText(c.price) + " ETH";
+  const progress = Math.min(100, Math.max(0, Math.round((Number(c.minted) || 0) / (Number(c.supply) || 1) * 100)));
+  const safeId = String(c.id).replace(/[^a-zA-Z0-9_-]/g, "");
+  const contract = c.contractAddress
+    ? '<a href="' + escapeAttr(explorerAddress(c.contractAddress)) + '" target="_blank" rel="noopener noreferrer">' + displayText(c.contractAddress) + "</a>"
+    : "Pending deployment";
   const lastMint = state.lastMint?.collectionId === c.id ? state.lastMint : null;
-  const marketplace = ACTIVE_NETWORK_KEY === "mainnet" && c.contractAddress ? ('<div class="marketplace-handoff"><a class="btn ghost block" href="' + (lastMint?.tokenIds?.[0] ? openseaAssetUrl(c.contractAddress, lastMint.tokenIds[0]) : openseaSearchUrl(c.name)) + '" target="_blank" rel="noopener noreferrer">View on OpenSea</a>' + (lastMint?.tokenIds?.[0] ? '<button class="btn ghost block" onclick="requestOpenSeaRefresh(\'' + c.id + '\',' + lastMint.tokenIds[0] + ')">Refresh OpenSea metadata</button>' : '') + '<p class="hint">' + state.marketplaceState + '</p></div>') : '<p class="hint">OpenSea handoff is enabled after a confirmed mainnet mint. Testnet ownership remains visible in Nest and the chain explorer.</p>';
-  return `<aside class="panel mint-module"><span class="state-label">${c.status}</span><h1>${c.name}</h1><p>${c.description}</p>${deployRow("Creator", c.creator + " / " + c.creatorAddress)}${deployRow("Network", c.chainName)}${deployRow("Contract", contract)}${deployRow("Mint price", price)}${deployRow("Supply", c.minted + "/" + c.supply)}${deployRow("Max per wallet", c.maxWallet)}${deployRow("Schedule", c.endsIn)}<div class="progress"><span style="width:${progress}%"></span></div><div class="field"><label>Quantity</label><input id="mint-quantity-${c.id}" type="number" min="1" max="${Math.min(c.maxWallet, c.maxTx || c.maxWallet)}" value="1" ${c.canMint ? "" : "disabled"}></div><button class="btn primary block" onclick="mintCollection('${c.id}')" ${c.canMint ? "" : "disabled"}>${c.canMint ? "Mint NFT" : "Mint not live yet"}</button><p id="mintStatus">${c.canMint ? state.mintState : "This collection is upcoming. Minting opens after its deployment is confirmed."}</p>${lastMint ? '<div class="notice success">Mint confirmed. Token IDs: ' + lastMint.tokenIds.join(", ") + ' <a href="' + explorerTx(lastMint.txHash) + '" target="_blank" rel="noopener noreferrer">View transaction</a></div>' : ""}${marketplace}<div class="divider"></div><h3>Primary revenue split</h3><p>Creator receives 95%. Nest receives 5% from primary mint revenue. Gas is paid separately by the buyer.</p></aside>`;
+  const marketplace = ACTIVE_NETWORK_KEY === "mainnet" && c.contractAddress
+    ? ('<div class="marketplace-handoff"><a class="btn ghost block" href="' + escapeAttr(lastMint?.tokenIds?.[0] ? openseaAssetUrl(c.contractAddress, lastMint.tokenIds[0]) : openseaSearchUrl(c.name)) + '" target="_blank" rel="noopener noreferrer">View on OpenSea</a>' + (lastMint?.tokenIds?.[0] ? '<button class="btn ghost block" onclick="requestOpenSeaRefresh(\'' + safeId + '\',' + Number(lastMint.tokenIds[0]) + ')">Refresh OpenSea metadata</button>' : '') + '<p class="hint">' + displayText(state.marketplaceState) + '</p></div>')
+    : '<p class="hint">OpenSea handoff is enabled after a confirmed mainnet mint. Testnet ownership remains visible in Nest and the chain explorer.</p>';
+  const revenuePanel = c.revenue
+    ? `<div class="divider"></div><h3>Revenue (accrued vs settled)</h3>
+      ${deployRow("Creator accrued (withdrawable)", weiToEth(c.revenue.creatorAccruedWei) + " ETH")}
+      ${deployRow("Creator settled", weiToEth(c.revenue.creatorSettledWei) + " ETH")}
+      ${deployRow("Nest accrued (withdrawable)", weiToEth(c.revenue.platformAccruedWei) + " ETH")}
+      ${deployRow("Nest settled", weiToEth(c.revenue.platformSettledWei) + " ETH")}
+      <p class="hint">Funds stay in the collection until withdraw. Allocated mint fees are not settled cash.</p>
+      ${BigInt(c.revenue.creatorAccruedWei || 0) > 0n ? `<button class="btn primary block" onclick="withdrawRevenue('${safeId}','creator')">Withdraw creator proceeds</button>` : ""}
+      ${BigInt(c.revenue.platformAccruedWei || 0) > 0n ? `<button class="btn ghost block" onclick="withdrawRevenue('${safeId}','platform')">Withdraw Nest platform share</button>` : ""}`
+    : "";
+  return `<aside class="panel mint-module"><span class="state-label">${displayText(c.status)}</span><h1>${displayText(c.name)}</h1><p>${displayText(c.description)}</p>${deployRow("Creator", displayText(c.creator) + " / " + displayText(c.creatorAddress))}${deployRow("Network", displayText(c.chainName))}${deployRow("Contract", contract)}${deployRow("Mint price", price)}${deployRow("Supply", displayText(c.minted) + "/" + displayText(c.supply))}${deployRow("Max per wallet", displayText(c.maxWallet))}${deployRow("Schedule", displayText(c.endsIn))}<div class="progress"><span style="width:${progress}%"></span></div><div class="field"><label>Quantity</label><input id="mint-quantity-${safeId}" type="number" min="1" max="${Math.min(Number(c.maxWallet) || 1, Number(c.maxTx || c.maxWallet) || 1)}" value="1" ${c.canMint ? "" : "disabled"}></div><button class="btn primary block" onclick="mintCollection('${safeId}')" ${c.canMint ? "" : "disabled"}>${c.canMint ? "Mint NFT" : "Mint not live yet"}</button><p id="mintStatus">${c.canMint ? displayText(state.mintState) : "This collection is upcoming. Minting opens after its deployment is confirmed."}</p>${lastMint ? '<div class="notice success">Mint confirmed. Token IDs: ' + displayText(lastMint.tokenIds.join(", ")) + ' <a href="' + escapeAttr(explorerTx(lastMint.txHash)) + '" target="_blank" rel="noopener noreferrer">View transaction</a></div>' : ""}${marketplace}${revenuePanel}<div class="divider"></div><h3>Primary revenue split</h3><p>Creator receives 95%. Nest receives 5% from primary mint revenue. Gas is paid separately by the buyer.</p></aside>`;
 }
 
 function platformActivity(c) {
@@ -582,11 +653,11 @@ function collectionPage(address) {
   if (!c) {
     return shell(`<main class="page"><section class="section">${openseaEmptyState("Collection not available from OpenSea", "This route only renders live OpenSea-backed Robinhood Chain collection records. Add an OpenSea API key and supported chain slug, then hydrate this page from the collection or contract endpoint.")}</section></main>`);
   }
-  return shell(`<main class="page mint-layout market-detail-layout"><section class="panel market-detail-panel"><div class="market-detail-identity"><div class="collection-avatar hero-avatar opensea-art" style="${collectionArtStyle(c)}"></div><div><span class="state-label">${c.verified ? "OpenSea verified" : "OpenSea Robinhood Chain"}</span><h1>${c.name}</h1><p>${c.description}</p></div></div><div class="section grid cols-3 market-samples">${[0,1,2,3,4,5].map(i=>`<div class="nft-art thumb-large" style="${artStyle((c.art || 0) + i)}"></div>`).join("")}</div></section><aside class="panel mint-module"><span class="state-label">Marketplace data</span><h2>${c.name}</h2><p>OpenSea discovery record for Robinhood Chain.</p>${deployRow("Source", c.creator || "OpenSea marketplace")}${deployRow("Floor", c.floor)}${deployRow("1d movement", `<span class="metric-${c.changeType}">${c.change}</span>`)}${deployRow("Status", c.status)}${deployRow("OpenSea", c.openseaUrl ? `<a href="${c.openseaUrl}" target="_blank" rel="noopener noreferrer">Open collection search</a>` : "OpenSea URL unavailable")}${deployRow("Contract", c.contractAddress ? `<a href="${explorerAddress(c.contractAddress)}" target="_blank" rel="noopener noreferrer">${c.contractAddress}</a>` : "Pending API hydration")}<div class="divider"></div><h3>Recent market activity</h3>${activityList()}<h3>Disclosures</h3><p>Thumbnails are shown at avatar size because the current source is the OpenSea ranking screenshot. Live API images should replace these when connected.</p></aside></main>`);
+  return shell(`<main class="page mint-layout market-detail-layout"><section class="panel market-detail-panel"><div class="market-detail-identity"><div class="collection-avatar hero-avatar opensea-art" style="${collectionArtStyle(c)}"></div><div><span class="state-label">${c.verified ? "OpenSea verified" : "OpenSea Robinhood Chain"}</span><h1>${displayText(c.name)}</h1><p>${displayText(c.description)}</p></div></div><div class="section grid cols-3 market-samples">${[0,1,2,3,4,5].map(i=>`<div class="nft-art thumb-large" style="${artStyle((c.art || 0) + i)}"></div>`).join("")}</div></section><aside class="panel mint-module"><span class="state-label">Marketplace data</span><h2>${displayText(c.name)}</h2><p>OpenSea discovery record for Robinhood Chain.</p>${deployRow("Source", displayText(c.creator || "OpenSea marketplace"))}${deployRow("Floor", displayText(c.floor))}${deployRow("1d movement", `<span class="metric-${escapeAttr(c.changeType)}">${displayText(c.change)}</span>`)}${deployRow("Status", displayText(c.status))}${deployRow("OpenSea", c.openseaUrl ? `<a href="${escapeAttr(c.openseaUrl)}" target="_blank" rel="noopener noreferrer">Open collection search</a>` : "OpenSea URL unavailable")}${deployRow("Contract", c.contractAddress ? `<a href="${escapeAttr(explorerAddress(c.contractAddress))}" target="_blank" rel="noopener noreferrer">${displayText(c.contractAddress)}</a>` : "Pending API hydration")}<div class="divider"></div><h3>Recent market activity</h3>${activityList()}<h3>Disclosures</h3><p>Thumbnails are shown at avatar size because the current source is the OpenSea ranking screenshot. Live API images should replace these when connected.</p></aside></main>`);
 }
 
-function deployRow(a,b) {
-  return `<div class="stat-row"><span>${a}</span><strong>${b}</strong></div>`;
+function deployRow(a, b) {
+  return `<div class="stat-row"><span>${displayText(a)}</span><strong>${typeof b === "string" && b.includes("<") ? b : displayText(b)}</strong></div>`;
 }
 
 function explorePage() {
@@ -594,8 +665,25 @@ function explorePage() {
 }
 
 function dashboardPage() {
-  const collectionRows = platformCollections.map(c=>`<tr><td><div class="mini-art" style="${platformArtStyle(c)}"></div></td><td>${c.name}</td><td>${c.minted}/${c.supply}</td><td>${c.price === "Free" ? "Free" : c.price + " ETH"}</td><td>${c.revenue ? weiToEth(c.revenue.creatorAccruedWei) + " ETH accrued" : "Onchain read pending"}</td><td><a href="#/mint/${c.id}">Mint page</a>${c.revenue && BigInt(c.revenue.creatorAccruedWei) > 0n ? `<button class="btn small" onclick="withdrawRevenue('${c.id}','creator')">Withdraw creator share</button>` : ""}</td></tr>`).join("");
-  const ownedRows = state.buyerNfts.map((item) => { const image = ipfsUrl(item.metadata?.imageUri || item.collection?.metadataItems?.[0]?.imageUri || ""); const marketLink = ACTIVE_NETWORK_KEY === "mainnet" && item.collection?.contractAddress ? openseaAssetUrl(item.collection.contractAddress, item.tokenId) : explorerAddress(item.collection?.contractAddress || ""); return `<article class="card market-card"><div class="nft-art" style="--art: url('${image}')"></div><div class="card-body"><span class="state-label">Owned by connected wallet</span><h3>${item.collection.name} #${item.tokenId}</h3><p>Mint transaction: ${item.mintTxHash.slice(0,10)}...</p><a class="market-link" href="${marketLink}" target="_blank" rel="noopener noreferrer">${ACTIVE_NETWORK_KEY === "mainnet" ? "View on OpenSea" : "View contract"}</a></div></article>`; }).join("");
+  const collectionRows = platformCollections.map((c) => {
+    const safeId = String(c.id).replace(/[^a-zA-Z0-9_-]/g, "");
+    const accrued = c.revenue ? weiToEth(c.revenue.creatorAccruedWei) + " ETH accrued" : "Onchain read pending";
+    const settled = c.revenue ? weiToEth(c.revenue.creatorSettledWei || "0") + " ETH settled" : "";
+    const creatorBtn = c.revenue && BigInt(c.revenue.creatorAccruedWei || 0) > 0n
+      ? `<button class="btn small" onclick="withdrawRevenue('${safeId}','creator')">Withdraw proceeds</button>`
+      : "";
+    const platformBtn = c.revenue && BigInt(c.revenue.platformAccruedWei || 0) > 0n
+      ? `<button class="btn small ghost" onclick="withdrawRevenue('${safeId}','platform')">Withdraw Nest share</button>`
+      : "";
+    return `<tr><td><div class="mini-art" style="${platformArtStyle(c)}"></div></td><td>${displayText(c.name)}</td><td>${displayText(c.minted)}/${displayText(c.supply)}</td><td>${c.price === "Free" ? "Free" : displayText(c.price) + " ETH"}</td><td>${displayText(accrued)}${settled ? `<br><span class="hint">${displayText(settled)}</span>` : ""}</td><td><a href="#/mint/${encodeURIComponent(String(c.id))}">Mint page</a> ${creatorBtn} ${platformBtn}</td></tr>`;
+  }).join("");
+  const ownedRows = state.buyerNfts.map((item) => {
+    const image = safeCssUrl(item.metadata?.imageUri || item.collection?.metadataItems?.[0]?.imageUri || "");
+    const marketLink = ACTIVE_NETWORK_KEY === "mainnet" && item.collection?.contractAddress
+      ? openseaAssetUrl(item.collection.contractAddress, item.tokenId)
+      : explorerAddress(item.collection?.contractAddress || "");
+    return `<article class="card market-card"><div class="nft-art" style="${image ? `--art: url('${image}')` : artStyle(0)}"></div><div class="card-body"><span class="state-label">Owned by connected wallet</span><h3>${displayText(item.collection?.name)} #${displayText(item.tokenId)}</h3><p>Mint transaction: ${displayText(String(item.mintTxHash || "").slice(0, 10))}...</p><a class="market-link" href="${escapeAttr(marketLink)}" target="_blank" rel="noopener noreferrer">${ACTIVE_NETWORK_KEY === "mainnet" ? "View on OpenSea" : "View contract"}</a></div></article>`;
+  }).join("");
   return shell(`<main class="page"><div class="section-head"><div><div class="kicker">Creator dashboard</div><h2>Manage Nest-deployed collections.</h2></div></div><div class="stats">${["Nest collections","Live collections","Total minted","Primary volume","Creator accrued","Nest fees accrued","Withdrawable","Unique minters"].map((x,i)=>`<div class="stat"><span>${x}</span><strong>${dashboardStat(i)}</strong></div>`).join("")}</div><div class="section grid cols-2"><div class="panel"><h3>Collections deployed on Nest</h3><table class="table"><tr><th>Artwork</th><th>Name</th><th>Minted</th><th>Price</th><th>Revenue</th><th>Action</th></tr>${collectionRows}</table></div><div class="panel"><h3>Creator actions</h3><table class="table"><tr><td>Open mint page</td><td>Public buyer-facing route</td></tr><tr><td>View contract</td><td>Robinhood Chain explorer</td></tr><tr><td>Revenue settlement</td><td>95% creator / 5% Nest accrues onchain; each fixed recipient withdraws its own share</td></tr><tr><td>OpenSea handoff</td><td>Available after confirmed mainnet mint</td></tr></table></div></div><section class="section"><div class="section-head"><div><div class="kicker">Collector wallet</div><h2>Your minted NFTs</h2></div><p>Ownership is written only after Nest verifies the onchain mint receipt.</p></div>${ownedRows ? '<div class="grid gallery-grid">' + ownedRows + "</div>" : '<div class="panel empty-state"><h3>No confirmed Nest mints in this wallet</h3><p>Minted tokens will appear here with their token ID and marketplace link.</p></div>'}</section></main>`);
 }
 
@@ -644,15 +732,32 @@ async function loadBackendCollections() {
   const result = await apiRequest("/collections?status=UPCOMING&take=24");
   platformCollections = [];
   if (!Array.isArray(result.items) || !result.items.length) return;
+  // Keep raw strings in state; escape only at render time (displayText / escapeAttr).
   platformCollections = result.items.map((c, index) => ({
-    id: c.id, contractAddress: c.contractAddress || c.deployments?.[0]?.contractAddress || "", name: escapeHtml(c.name),
-    creator: escapeHtml(c.creatorName || "Nest creator"), creatorAddress: c.creatorWallet, description: escapeHtml(c.description),
-    minted: c.mintedSupply || 0, supply: c.maxSupply, price: weiToEth(c.mintPriceWei), mintPriceWei: c.mintPriceWei,
-    maxWallet: c.maxPerWallet, maxTx: c.maxPerTransaction || c.maxPerWallet, chainId: c.chainId,
-    status: collectionStatusLabel(c.status), canMint: c.status === "LIVE" && Boolean(c.contractAddress || c.deployments?.[0]?.contractAddress),
-    chainName: escapeHtml(c.chainName), endsIn: escapeHtml(mintSchedule(c)), deployedAt: "Nest deployment", metadataCid: c.metadataBaseUri || "Metadata pending",
-    metadataBaseUri: c.metadataBaseUri || "", contractUri: c.contractUri || "", txHash: c.txHash || c.deployments?.[0]?.txHash || "",
-    activity: [], revenue: null,
+    id: c.id,
+    contractAddress: c.contractAddress || c.deployments?.[0]?.contractAddress || "",
+    name: c.name,
+    creator: c.creatorName || "Nest creator",
+    creatorAddress: c.creatorWallet,
+    description: c.description,
+    minted: c.mintedSupply || 0,
+    supply: c.maxSupply,
+    price: weiToEth(c.mintPriceWei),
+    mintPriceWei: c.mintPriceWei,
+    maxWallet: c.maxPerWallet,
+    maxTx: c.maxPerTransaction || c.maxPerWallet,
+    chainId: c.chainId,
+    status: collectionStatusLabel(c.status),
+    canMint: c.status === "LIVE" && Boolean(c.contractAddress || c.deployments?.[0]?.contractAddress),
+    chainName: c.chainName,
+    endsIn: mintSchedule(c),
+    deployedAt: "Nest deployment",
+    metadataCid: c.metadataBaseUri || "Metadata pending",
+    metadataBaseUri: c.metadataBaseUri || "",
+    contractUri: c.contractUri || "",
+    txHash: c.txHash || c.deployments?.[0]?.txHash || "",
+    activity: [],
+    revenue: null,
     image: c.assets?.[0] && Number(c.assets[0].sizeBytes || 0) < 128
       ? "./assets/nest-test-artwork.png"
       : ipfsUrl(c.assets?.[0]?.ipfsUri || c.metadataItems?.[0]?.imageUri),
@@ -720,7 +825,10 @@ function resetWalletSession(message = "Wallet disconnected.") {
   state.walletProviderName = "";
   state.authToken = "";
   localStorage.removeItem("nestWalletAddress");
-  localStorage.removeItem("nestAuthToken");
+  localStorage.removeItem("nestAuthToken"); // legacy cleanup
+  if (state.backend === "online") {
+    fetch(`${API_BASE}/auth/logout`, { method: "POST", credentials: "include" }).catch(() => {});
+  }
   state.notice = message;
 }
 
@@ -734,6 +842,7 @@ function observeWalletProvider(provider) {
     localStorage.removeItem("nestAuthToken");
     if (walletAddress) localStorage.setItem("nestWalletAddress", walletAddress);
     else localStorage.removeItem("nestWalletAddress");
+    fetch(`${API_BASE}/auth/logout`, { method: "POST", credentials: "include" }).catch(() => {});
     state.notice = walletAddress ? "Wallet account changed. Sign in again to continue." : "Wallet disconnected.";
     render();
   });
@@ -776,8 +885,9 @@ async function authenticateWallet(provider, walletAddress) {
   const challenge = await apiRequest("/auth/nonce", { method: "POST", body: JSON.stringify({ walletAddress }) });
   const signature = await provider.request({ method: "personal_sign", params: [challenge.message, walletAddress] });
   const verified = await apiRequest("/auth/verify", { method: "POST", body: JSON.stringify({ sessionId: challenge.sessionId, message: challenge.message, signature }) });
-  state.authToken = verified.token;
-  localStorage.setItem("nestAuthToken", verified.token);
+  // Memory-only bearer + httpOnly cookie from Set-Cookie. Never persist JWT in localStorage.
+  state.authToken = verified.token || "";
+  localStorage.removeItem("nestAuthToken");
   await loadDraftCollection();
   await loadBuyerNfts();
   state.notice = "Wallet connected and authenticated with Nest.";
@@ -1247,9 +1357,29 @@ function render() {
   animateCounters(document);
 }
 
+// Migrate away from XSS-stealable JWT storage.
+localStorage.removeItem("nestAuthToken");
+
 const localDraft = localStorage.getItem("nestLaunchDraft");
 if (localDraft) {
   try { state.launch = { ...state.launch, ...JSON.parse(localDraft) }; } catch {}
 }
+
+async function restoreSessionFromCookie() {
+  if (!state.walletAddress) return;
+  try {
+    const me = await apiRequest("/auth/me");
+    if (me?.walletAddress) {
+      state.wallet = "connected";
+      state.walletAddress = me.walletAddress;
+      // Cookie session active; bearer may be empty until next sign-in.
+      await loadDraftCollection();
+      await loadBuyerNfts();
+    }
+  } catch {
+    /* no cookie session */
+  }
+}
+
 render();
-checkBackend();
+checkBackend().then(() => restoreSessionFromCookie());

@@ -153,9 +153,52 @@ assert.equal(platformAfter, 0n);
 assert.equal(contractBalanceAfter, 0n);
 await assert.rejects(() => buyerClient.writeContract({ address: collection, abi: collectionArtifact.abi, functionName: "withdrawTreasury" }));
 
+// Second independent minter still succeeds after first wallet is at cap.
+const secondBuyer = accounts[3];
+const secondBuyerClient = createWalletClient({ account: secondBuyer, chain, transport });
+const secondMintHash = await secondBuyerClient.writeContract({
+  address: collection,
+  abi: collectionArtifact.abi,
+  functionName: "mint",
+  args: [1n],
+  value: mintPrice
+});
+await publicClient.waitForTransactionReceipt({ hash: secondMintHash });
+const supplyAfterSecond = await publicClient.readContract({
+  address: collection,
+  abi: collectionArtifact.abi,
+  functionName: "totalSupply"
+});
+assert.equal(supplyAfterSecond, 3n);
+
+// Withdraw destinations are immutable fixed addresses (caller cannot redirect).
+const creatorPayout = await publicClient.readContract({
+  address: collection,
+  abi: collectionArtifact.abi,
+  functionName: "creatorPayout"
+});
+const platformTreasury = await publicClient.readContract({
+  address: collection,
+  abi: collectionArtifact.abi,
+  functionName: "platformTreasury"
+});
+assert.equal(getAddress(creatorPayout), getAddress(owner.address));
+assert.equal(getAddress(platformTreasury), getAddress(treasury.address));
+
 console.log(JSON.stringify({
   status: "passed",
-  checks: ["exact payment", "wallet cap", "95/5 accrual", "creator payout", "treasury payout", "totalSupply", "ERC-2981", "zero-withdraw revert"],
+  checks: [
+    "exact payment",
+    "wallet cap",
+    "second wallet mint",
+    "95/5 accrual",
+    "creator payout",
+    "treasury payout",
+    "totalSupply",
+    "ERC-2981",
+    "zero-withdraw revert",
+    "immutable withdraw destinations"
+  ],
   factory,
   collection
 }));

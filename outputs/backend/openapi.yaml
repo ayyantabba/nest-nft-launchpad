@@ -12,22 +12,25 @@ components:
   schemas:
     Error:
       type: object
-      properties: { error: { type: string }, details: { type: object } }
+      properties:
+        error: { type: string }
+        details: { type: object }
+        errorId: { type: string, description: Correlation id for 4xx/5xx logs }
     CollectionInput:
       type: object
       required: [name, symbol, description, chainId, chainName, mintCurrency, mintPriceWei, maxSupply, maxPerWallet, royaltyBps, creatorPayoutWallet]
       properties:
-        name: { type: string, maxLength: 100 }
-        symbol: { type: string, maxLength: 12 }
-        description: { type: string, maxLength: 5000 }
+        name: { type: string, maxLength: 100, description: Plain text only; HTML/control characters rejected }
+        symbol: { type: string, maxLength: 12, pattern: '^[A-Za-z0-9._-]+$' }
+        description: { type: string, maxLength: 5000, description: Plain text only; HTML rejected }
         chainId: { type: integer, enum: [46630, 4663] }
         chainName: { type: string, enum: [Robinhood Chain Testnet, Robinhood Chain] }
         mintCurrency: { type: string, const: ETH }
         mintPriceWei: { type: string, pattern: '^\\d+$' }
         maxSupply: { type: integer, minimum: 1, maximum: 10000 }
-        maxPerWallet: { type: integer, minimum: 1 }
-        maxPerTransaction: { type: integer, minimum: 1 }
-        royaltyBps: { type: integer, minimum: 0, maximum: 1000 }
+        maxPerWallet: { type: integer, minimum: 1, description: Must be <= maxSupply }
+        maxPerTransaction: { type: integer, minimum: 1, description: Must be <= maxPerWallet and <= maxSupply }
+        royaltyBps: { type: integer, minimum: 0, maximum: 1000, description: Secondary royalty signal cap 10% }
         creatorPayoutWallet: { type: string }
         websiteUrl: { type: string, format: uri }
         socialUrl: { type: string, format: uri }
@@ -36,8 +39,10 @@ components:
 paths:
   /health:
     get:
-      summary: Health and database check
-      responses: { '200': { description: Healthy } }
+      summary: Live health probes (db, pinata, rpcs, factory bytecode presence)
+      responses:
+        '200': { description: Healthy or degraded with integration flags }
+        '503': { description: Database unavailable }
   /health/storage:
     get:
       summary: Verify server-side IPFS provider authentication
@@ -53,8 +58,17 @@ paths:
       responses: { '200': { description: Message to sign } }
   /auth/verify:
     post:
-      summary: Verify signature and issue session token
+      summary: Verify signature; sets httpOnly nest_session cookie and returns in-memory JWT
       responses: { '200': { description: Authenticated } }
+  /auth/me:
+    get:
+      security: [{ bearerAuth: [] }]
+      summary: Return wallet for cookie or bearer session
+      responses: { '200': { description: Session valid }, '401': { description: Unauthorized } }
+  /auth/logout:
+    post:
+      summary: Clear httpOnly session cookie
+      responses: { '200': { description: Logged out } }
   /collections:
     get:
       summary: List public collections
