@@ -68,9 +68,13 @@ The backend has a `RevenueWithdrawal` table and verifies withdrawal transaction 
 
 ## Important production state
 
+- Release commit `e331331` passed GitHub Actions run `#79` on 2026-07-21: contracts, backend, and frontend all succeeded.
+- Railway `/v1/health` was verified after deployment: database and Pinata are healthy, testnet and mainnet RPC probes pass, testnet factory configuration is present, and mainnet remains disabled.
+- Vercel was verified after deployment: home and `robots.txt` return 200, SRI hashes are present, and `runtime-config.js` remains on guarded testnet mode.
 - Previous testnet factory: `0xa3EbB73a56723159C03f1C682A57E1d4D99F560d` (v1.0 test artifact). It cannot deploy updated v1.1 collection bytecode.
 - Backend was healthy with database, Pinata, and testnet factory enabled.
 - Mainnet was intentionally disabled and had no verified `FACTORY_MAINNET_ADDRESS` at the time of this handoff.
+- The v1.1 testnet factory has not yet been broadcast. No `TESTNET_DEPLOYER_PRIVATE_KEY` exists in the current workspace environment. Do not ask the user to paste one; deploy through the connected owner wallet at `#/admin`, or inject a disposable testnet key only into a private local process outside source control.
 - Do not change `outputs/runtime-config.js` to mainnet until a verified v1.1 mainnet factory exists and Railway is configured.
 - Testnet artifacts from earlier QA are listed in the user's re-test report; do not treat them as production contracts.
 
@@ -118,14 +122,13 @@ Frontend/runtime:
 
 ## Next required work
 
-1. Confirm GitHub CI, Vercel, Railway migration, and `/v1/health` after this release commit.
-2. Deploy the v1.1 factory to testnet from the platform-owner wallet through `#/admin`.
-3. Update Railway `FACTORY_TESTNET_ADDRESS`, then repeat the two-wallet paid-mint and both-withdrawal regression against hosted infrastructure.
-4. Obtain an independent smart-contract audit/review of the exact compiled mainnet artifact.
-5. Follow every step in `MAINNET_RELEASE.md`; do not skip the canary launch.
-6. Only after those gates, deploy v1.1 to mainnet, verify it on Blockscout, configure Railway, and switch Vercel runtime to mainnet.
-7. Add an event-reconciliation worker so permissionless withdrawals initiated outside Nest are imported into `RevenueWithdrawal` automatically.
-8. Confirm whether OpenSea officially accepts the Robinhood Chain slug before promising marketplace indexing. Keep Blockscout/tokenURI links available regardless.
+1. Deploy the v1.1 factory to testnet from the platform-owner wallet through `#/admin`.
+2. Update Railway `FACTORY_TESTNET_ADDRESS`, then repeat the two-wallet paid-mint and both-withdrawal regression against hosted infrastructure.
+3. Obtain an independent smart-contract audit/review of the exact compiled mainnet artifact.
+4. Follow every step in `MAINNET_RELEASE.md`; do not skip the canary launch.
+5. Only after those gates, deploy v1.1 to mainnet, verify it on Blockscout, configure Railway, and switch Vercel runtime to mainnet.
+6. Add an event-reconciliation worker so permissionless withdrawals initiated outside Nest are imported into `RevenueWithdrawal` automatically.
+7. Confirm whether OpenSea officially accepts the Robinhood Chain slug before promising marketplace indexing. Keep Blockscout/tokenURI links available regardless.
 
 ## Working style
 
