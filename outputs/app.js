@@ -616,6 +616,7 @@ function mintCollectionPage(id) {
 function platformCard(c) {
   const price = c.price === "Free" ? "Free" : `${displayText(c.price)} ETH`;
   const progress = Math.min(100, Math.max(0, Math.round((Number(c.minted) || 0) / (Number(c.supply) || 1) * 100)));
+  const id = encodeURIComponent(String(c.id));
   return `<article class="card market-card"><a href="#/mint/${id}"><div class="nft-art" style="${platformArtStyle(c)}"></div></a><div class="card-body"><span class="state-label">${displayText(c.status)}</span><h3>${displayText(c.name)}</h3><p>${displayText(c.creator)}</p><div class="progress"><span style="width:${progress}%"></span></div><div class="card-metrics"><div><span>Minted</span><strong>${displayText(c.minted)}/${displayText(c.supply)}</strong></div><div><span>Price</span><strong>${price}</strong></div></div><a class="market-link" href="#/mint/${id}">${c.canMint ? "Mint collection" : "View upcoming drop"}</a></div></article>`;
 }
 
